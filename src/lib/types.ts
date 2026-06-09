@@ -9,6 +9,7 @@ export type Profile = {
 
 export type Match = {
   id: string;
+  source_id?: string | null;
   kickoff_at: string;
   home_team: string;
   away_team: string;
@@ -60,6 +61,7 @@ export type Database = {
         Row: Match;
         Insert: {
           id?: string;
+          source_id?: string | null;
           kickoff_at: string;
           home_team: string;
           away_team: string;
@@ -71,6 +73,7 @@ export type Database = {
         };
         Update: {
           kickoff_at?: string;
+          source_id?: string | null;
           home_team?: string;
           away_team?: string;
           home_score?: number | null;

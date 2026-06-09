@@ -107,6 +107,7 @@ export async function updateMatchScore(formData: FormData) {
   revalidatePath('/matches');
   revalidatePath('/matches/today');
   revalidatePath('/my-predictions');
+  revalidatePath('/submissions');
   redirect('/admin?saved=1');
 }
 
@@ -124,5 +125,6 @@ export async function recalculateMatchPoints(formData: FormData) {
   revalidatePath('/admin');
   revalidatePath('/leaderboard');
   revalidatePath('/my-predictions');
+  revalidatePath('/submissions');
   redirect('/admin?recalculated=1');
 }

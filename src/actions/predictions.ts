@@ -70,5 +70,6 @@ export async function submitPrediction(formData: FormData) {
   revalidatePath('/matches');
   revalidatePath('/matches/today');
   revalidatePath('/my-predictions');
+  revalidatePath('/submissions');
   redirect('/matches/today?saved=1');
 }

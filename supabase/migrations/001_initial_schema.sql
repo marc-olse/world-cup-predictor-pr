@@ -9,6 +9,7 @@ create table if not exists public.profiles (
 
 create table if not exists public.matches (
   id uuid primary key default gen_random_uuid(),
+  source_id text unique,
   kickoff_at timestamptz not null,
   home_team text not null,
   away_team text not null,
