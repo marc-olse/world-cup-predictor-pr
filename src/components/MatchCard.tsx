@@ -1,0 +1,101 @@
+import { PredictionForm } from '@/components/PredictionForm';
+import { countryFlag } from '@/lib/countries';
+import type { Match, Prediction } from '@/lib/types';
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
+
+function formatKickoffTime(value: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  }).format(new Date(value));
+}
+
+function statusLabel(status: Match['status']) {
+  return status[0].toUpperCase() + status.slice(1);
+}
+
+function TeamName({ name }: { name: string }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      <span aria-hidden="true" className="text-3xl leading-none">
+        {countryFlag(name)}
+      </span>
+      <span>{name}</span>
+    </span>
+  );
+}
+
+export function MatchCard({
+  match,
+  prediction,
+  showForm = false,
+  forcePredictionOpen = false,
+}: {
+  match: Match;
+  prediction?: Prediction | null;
+  showForm?: boolean;
+  forcePredictionOpen?: boolean;
+}) {
+  const hasFinalScore = match.home_score !== null && match.away_score !== null;
+  const closed =
+    !forcePredictionOpen && Date.now() >= new Date(match.kickoff_at).getTime();
+
+  return (
+    <article className="panel">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-ink/60">{formatDateTime(match.kickoff_at)}</p>
+          <h2 className="mt-2 flex flex-wrap items-center gap-3 text-xl font-bold">
+            <TeamName name={match.home_team} />
+            <span className="text-base text-ink/35">vs</span>
+            <TeamName name={match.away_team} />
+          </h2>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-md bg-gold/15 px-3 py-2 text-sm font-bold text-ink">
+            Kick-off {formatKickoffTime(match.kickoff_at)}
+          </span>
+          <span className="rounded-full bg-ocean/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-ocean">
+            {statusLabel(match.status)}
+          </span>
+        </div>
+      </div>
+
+      <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+        <div>
+          <dt className="text-ink/55">Final score</dt>
+          <dd className="font-semibold">
+            {hasFinalScore ? `${match.home_score}-${match.away_score}` : 'Not entered'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-ink/55">Your prediction</dt>
+          <dd className="font-semibold">
+            {prediction
+              ? `${prediction.predicted_home_score}-${prediction.predicted_away_score}`
+              : 'None yet'}
+          </dd>
+        </div>
+        <div>
+          <dt className="text-ink/55">Prediction window</dt>
+          <dd className="font-semibold">{closed ? 'Closed' : 'Open'}</dd>
+        </div>
+      </dl>
+
+      {showForm ? (
+        <PredictionForm
+          forceOpen={forcePredictionOpen}
+          match={match}
+          prediction={prediction}
+        />
+      ) : null}
+    </article>
+  );
+}
