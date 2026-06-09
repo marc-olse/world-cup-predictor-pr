@@ -2,50 +2,17 @@ import { DemoMatchCard } from '@/components/DemoMatchCard';
 import { MatchCard } from '@/components/MatchCard';
 import { Notice } from '@/components/Notice';
 import { requireUser } from '@/lib/auth';
+import {
+  fixtureToMatch,
+  getCurrentUkScheduleWindow,
+  worldCupFixtures,
+} from '@/lib/fixtures';
 import { createClient } from '@/lib/supabase/server';
 import type { Match, Prediction } from '@/lib/types';
 
-const demoMatchday = {
-  label: '12 June 2026',
-  start: '2026-06-12T00:00:00.000Z',
-  end: '2026-06-13T00:00:00.000Z',
-};
-
-const demoMatches: Match[] = [
-  {
-    id: 'demo-canada-bosnia',
-    kickoff_at: '2026-06-12T18:00:00.000Z',
-    home_team: 'Canada',
-    away_team: 'Bosnia and Herzegovina',
-    home_score: null,
-    away_score: null,
-    status: 'scheduled',
-    created_at: '2026-06-09T00:00:00.000Z',
-    updated_at: '2026-06-09T00:00:00.000Z',
-  },
-  {
-    id: 'demo-qatar-switzerland',
-    kickoff_at: '2026-06-12T21:00:00.000Z',
-    home_team: 'Qatar',
-    away_team: 'Switzerland',
-    home_score: null,
-    away_score: null,
-    status: 'scheduled',
-    created_at: '2026-06-09T00:00:00.000Z',
-    updated_at: '2026-06-09T00:00:00.000Z',
-  },
-  {
-    id: 'demo-usa-paraguay',
-    kickoff_at: '2026-06-12T23:00:00.000Z',
-    home_team: 'United States',
-    away_team: 'Paraguay',
-    home_score: null,
-    away_score: null,
-    status: 'scheduled',
-    created_at: '2026-06-09T00:00:00.000Z',
-    updated_at: '2026-06-09T00:00:00.000Z',
-  },
-];
+function matchKey(match: Pick<Match, 'home_team' | 'away_team' | 'kickoff_at'>) {
+  return `${match.home_team}|${match.away_team}|${new Date(match.kickoff_at).getTime()}`;
+}
 
 export default async function TodaysMatchesPage({
   searchParams,
@@ -55,14 +22,28 @@ export default async function TodaysMatchesPage({
   const user = await requireUser();
   const params = await searchParams;
   const supabase = await createClient();
+  const matchday = getCurrentUkScheduleWindow();
+  const staticMatches = worldCupFixtures
+    .filter((fixture) => {
+      const kickoff = new Date(fixture.kickoffAt);
+      return kickoff >= matchday.start && kickoff < matchday.end;
+    })
+    .map(fixtureToMatch);
 
   const { data: matches } = await supabase
     .from('matches')
     .select('*')
-    .gte('kickoff_at', demoMatchday.start)
-    .lt('kickoff_at', demoMatchday.end)
+    .gte('kickoff_at', matchday.start.toISOString())
+    .lt('kickoff_at', matchday.end.toISOString())
     .order('kickoff_at', { ascending: true });
 
+  const databaseMatchesById = new Map((matches ?? []).map((match) => [match.id, match]));
+  const databaseMatchesBySourceId = new Map(
+    (matches ?? [])
+      .filter((match) => match.source_id)
+      .map((match) => [match.source_id, match]),
+  );
+  const databaseMatchesByKey = new Map((matches ?? []).map((match) => [matchKey(match), match]));
   const matchIds = (matches ?? []).map((match) => match.id);
   const { data: predictions } = matchIds.length
     ? await supabase
@@ -79,35 +60,37 @@ export default async function TodaysMatchesPage({
   return (
     <section className="grid gap-5">
       <div>
-        <h1 className="text-3xl font-bold">June 12 matches</h1>
+        <h1 className="text-3xl font-bold">Today&apos;s schedule</h1>
         <p className="mt-2 text-sm text-ink/60">
-          Showing games played on {demoMatchday.label}. Predictions are open for
-          this demo matchday.
+          Showing games from 09:00 on {matchday.label} to before 09:00 the
+          next day.
         </p>
       </div>
       <Notice success={params.saved ? 'Prediction saved.' : undefined} />
-      {matches?.length ? (
+      {staticMatches.length || matches?.length ? (
         <div className="grid gap-4">
-          {matches.map((match) => (
+          {staticMatches.map((staticMatch) => {
+          const databaseMatch =
+            databaseMatchesById.get(staticMatch.id) ??
+            databaseMatchesBySourceId.get(staticMatch.source_id) ??
+            databaseMatchesByKey.get(matchKey(staticMatch));
+
+          return databaseMatch ? (
             <MatchCard
-              forcePredictionOpen={match.status !== 'finished'}
-              key={match.id}
-              match={match}
-              prediction={predictionsByMatch.get(match.id)}
+              key={databaseMatch.id}
+              match={databaseMatch}
+              prediction={predictionsByMatch.get(databaseMatch.id)}
               showForm
             />
-          ))}
+          ) : (
+            <DemoMatchCard key={staticMatch.id} match={staticMatch} />
+          );
+          })}
         </div>
       ) : (
-        <div className="grid gap-4">
-          <p className="rounded-md border border-gold/30 bg-gold/10 px-3 py-2 text-sm text-ink/70">
-            Showing local demo fixtures. Run the updated Supabase seed file when
-            you want these predictions to persist in the database.
-          </p>
-          {demoMatches.map((match) => (
-            <DemoMatchCard key={match.id} match={match} />
-          ))}
-        </div>
+        <p className="panel text-sm text-ink/65">
+          No games are scheduled in today&apos;s 09:00 to 09:00 window.
+        </p>
       )}
     </section>
   );

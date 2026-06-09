@@ -1,18 +1,50 @@
+import { DemoMatchCard } from '@/components/DemoMatchCard';
 import { MatchCard } from '@/components/MatchCard';
 import { requireUser } from '@/lib/auth';
+import {
+  fixtureToMatch,
+  groupMatchesByUkDate,
+  worldCupFixtures,
+} from '@/lib/fixtures';
 import { createClient } from '@/lib/supabase/server';
-import type { Prediction } from '@/lib/types';
+import type { Match, Prediction } from '@/lib/types';
+
+function matchKey(match: Pick<Match, 'home_team' | 'away_team' | 'kickoff_at'>) {
+  return `${match.home_team}|${match.away_team}|${new Date(match.kickoff_at).getTime()}`;
+}
 
 export default async function MatchesPage() {
   const user = await requireUser();
   const supabase = await createClient();
 
-  const { data: matches } = await supabase
+  const { data: databaseMatches } = await supabase
     .from('matches')
     .select('*')
     .order('kickoff_at', { ascending: true });
 
-  const matchIds = (matches ?? []).map((match) => match.id);
+  const databaseMatchesById = new Map(
+    (databaseMatches ?? []).map((match) => [match.id, match]),
+  );
+  const databaseMatchesBySourceId = new Map(
+    (databaseMatches ?? [])
+      .filter((match) => match.source_id)
+      .map((match) => [match.source_id, match]),
+  );
+  const databaseMatchesByKey = new Map(
+    (databaseMatches ?? []).map((match) => [matchKey(match), match]),
+  );
+  const matches = worldCupFixtures.map((fixture) => {
+    const staticMatch = fixtureToMatch(fixture);
+    return (
+      databaseMatchesById.get(staticMatch.id) ??
+      databaseMatchesBySourceId.get(staticMatch.source_id) ??
+      databaseMatchesByKey.get(matchKey(staticMatch)) ??
+      staticMatch
+    );
+  });
+  const persistedMatchIds = new Set((databaseMatches ?? []).map((match) => match.id));
+
+  const matchIds = matches.map((match) => match.id);
   const { data: predictions } = matchIds.length
     ? await supabase
         .from('predictions')
@@ -28,22 +60,39 @@ export default async function MatchesPage() {
   return (
     <section className="grid gap-5">
       <div>
-        <h1 className="text-3xl font-bold">All matches</h1>
-        <p className="mt-2 text-sm text-ink/60">Fixtures are ordered by kickoff time.</p>
+        <h1 className="text-3xl font-bold">Full calendar</h1>
+        <p className="mt-2 text-sm text-ink/60">
+          All 104 fixtures, grouped by UK matchday and listed with UK kick-off
+          times.
+        </p>
       </div>
-      {matches?.length ? (
-        <div className="grid gap-4">
-          {matches.map((match) => (
-            <MatchCard
-              key={match.id}
-              match={match}
-              prediction={predictionsByMatch.get(match.id)}
-            />
-          ))}
-        </div>
-      ) : (
-        <p className="panel text-sm text-ink/65">No matches have been seeded yet.</p>
-      )}
+      <p className="rounded-md border border-ocean/20 bg-ocean/10 px-3 py-2 text-sm text-ink/70">
+        Fixture source: Sky Sports day-by-day World Cup 2026 schedule. Run the
+        updated Supabase seed if you want all fixtures to be stored for shared
+        predictions.
+      </p>
+      <div className="grid gap-8">
+        {groupMatchesByUkDate(matches).map((day) => (
+          <section className="grid gap-3" key={day.dateKey}>
+            <h2 className="text-xl font-bold">{day.label}</h2>
+            <div className="grid gap-4">
+              {day.matches.map((match) =>
+                persistedMatchIds.has(match.id) ? (
+                  <MatchCard
+                    forcePredictionOpen={match.status !== 'finished'}
+                    key={match.id}
+                    match={match}
+                    prediction={predictionsByMatch.get(match.id)}
+                    showForm
+                  />
+                ) : (
+                  <DemoMatchCard key={match.id} match={match} />
+                ),
+              )}
+            </div>
+          </section>
+        ))}
+      </div>
     </section>
   );
 }
