@@ -13,9 +13,6 @@ function TeamName({ name }: { name: string }) {
         <p className="break-words text-xl font-black uppercase text-ink sm:text-4xl">
           {name === 'United States' ? 'USA' : name}
         </p>
-        <p className="mt-1 break-words text-[0.65rem] font-bold uppercase tracking-[0.18em] text-ink/45 sm:text-sm sm:tracking-[0.25em]">
-          {name}
-        </p>
       </div>
     </div>
   );

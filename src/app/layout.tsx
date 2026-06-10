@@ -33,6 +33,9 @@ export default function RootLayout({
               <Link className="rounded-md px-3 py-2 hover:bg-ink/5" href="/submissions">
                 Submitted
               </Link>
+              <Link className="rounded-md px-3 py-2 hover:bg-ink/5" href="/my-predictions">
+                My Predictions
+              </Link>
               <Link className="rounded-md px-3 py-2 hover:bg-ink/5" href="/leaderboard">
                 Leaderboard
               </Link>

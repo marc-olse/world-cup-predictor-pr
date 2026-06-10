@@ -24,9 +24,17 @@ export type Prediction = {
   id: string;
   user_id: string;
   match_id: string;
-  predicted_home_score: number;
-  predicted_away_score: number;
+  predicted_home_score: number | null;
+  predicted_away_score: number | null;
   points: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type TournamentPrediction = {
+  user_id: string;
+  winner: string | null;
+  semi_finalists: string[];
   created_at: string;
   updated_at: string;
 };
@@ -89,8 +97,8 @@ export type Database = {
           id?: string;
           user_id: string;
           match_id: string;
-          predicted_home_score: number;
-          predicted_away_score: number;
+          predicted_home_score: number | null;
+          predicted_away_score: number | null;
           points?: number;
           created_at?: string;
           updated_at?: string;
@@ -98,8 +106,8 @@ export type Database = {
         Update: {
           user_id?: string;
           match_id?: string;
-          predicted_home_score?: number;
-          predicted_away_score?: number;
+          predicted_home_score?: number | null;
+          predicted_away_score?: number | null;
           points?: number;
           updated_at?: string;
         };
@@ -115,6 +123,30 @@ export type Database = {
             foreignKeyName: 'predictions_user_id_fkey';
             columns: ['user_id'];
             isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      tournament_predictions: {
+        Row: TournamentPrediction;
+        Insert: {
+          user_id: string;
+          winner?: string | null;
+          semi_finalists?: string[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          winner?: string | null;
+          semi_finalists?: string[];
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'tournament_predictions_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: true;
             referencedRelation: 'profiles';
             referencedColumns: ['id'];
           },

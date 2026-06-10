@@ -22,6 +22,7 @@ export default async function TodaysMatchesPage({
   const user = await requireUser();
   const params = await searchParams;
   const supabase = await createClient();
+  await supabase.rpc('close_started_matches_with_null_predictions');
   const matchday = getCurrentUkScheduleWindow();
   const staticMatches = worldCupFixtures
     .filter((fixture) => {
@@ -60,10 +61,9 @@ export default async function TodaysMatchesPage({
   return (
     <section className="grid gap-5">
       <div>
-        <h1 className="text-3xl font-bold">Today&apos;s schedule</h1>
+        <h1 className="text-3xl font-bold">Today&apos;s matches</h1>
         <p className="mt-2 text-sm text-ink/60">
-          Showing games from 09:00 on {matchday.label} to before 09:00 the
-          next day.
+          Showing the current matchday slate for {matchday.label}.
         </p>
       </div>
       <Notice success={params.saved ? 'Prediction saved.' : undefined} />
@@ -80,6 +80,7 @@ export default async function TodaysMatchesPage({
               key={databaseMatch.id}
               match={databaseMatch}
               prediction={predictionsByMatch.get(databaseMatch.id)}
+              returnTo="/matches/today"
               showForm
             />
           ) : (
@@ -89,7 +90,7 @@ export default async function TodaysMatchesPage({
         </div>
       ) : (
         <p className="panel text-sm text-ink/65">
-          No games are scheduled in today&apos;s 09:00 to 09:00 window.
+          No games are scheduled for the current matchday.
         </p>
       )}
     </section>

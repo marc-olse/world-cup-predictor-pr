@@ -1,6 +1,6 @@
 export function calculatePredictionPoints(params: {
-  predictedHomeScore: number;
-  predictedAwayScore: number;
+  predictedHomeScore: number | null;
+  predictedAwayScore: number | null;
   actualHomeScore: number | null;
   actualAwayScore: number | null;
 }): number {
@@ -11,7 +11,12 @@ export function calculatePredictionPoints(params: {
     actualAwayScore,
   } = params;
 
-  if (actualHomeScore === null || actualAwayScore === null) {
+  if (
+    actualHomeScore === null ||
+    actualAwayScore === null ||
+    predictedHomeScore === null ||
+    predictedAwayScore === null
+  ) {
     return 0;
   }
 

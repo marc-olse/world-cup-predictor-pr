@@ -20,6 +20,11 @@ function parseScore(formData: FormData, key: string) {
 export async function submitPrediction(formData: FormData) {
   const user = await requireUser();
   const matchId = formData.get('matchId');
+  const returnToValue = formData.get('returnTo');
+  const returnTo =
+    typeof returnToValue === 'string' && returnToValue.startsWith('/')
+      ? returnToValue
+      : '/matches';
 
   if (typeof matchId !== 'string' || !matchId) {
     throw new Error('A match is required.');
@@ -39,15 +44,10 @@ export async function submitPrediction(formData: FormData) {
     throw new Error('Match not found.');
   }
 
-  const today = new Date();
   const kickoff = new Date(match.kickoff_at);
-  const isToday =
-    kickoff.getFullYear() === today.getFullYear() &&
-    kickoff.getMonth() === today.getMonth() &&
-    kickoff.getDate() === today.getDate();
-  const simulatedOpenToday = isToday && match.status !== 'finished';
 
-  if (!simulatedOpenToday && Date.now() >= kickoff.getTime()) {
+  if (Date.now() >= kickoff.getTime()) {
+    await supabase.rpc('close_started_matches_with_null_predictions');
     throw new Error('Predictions are closed for this match.');
   }
 
@@ -71,5 +71,6 @@ export async function submitPrediction(formData: FormData) {
   revalidatePath('/matches/today');
   revalidatePath('/my-predictions');
   revalidatePath('/submissions');
-  redirect('/matches/today?saved=1');
+  const separator = returnTo.includes('?') ? '&' : '?';
+  redirect(`${returnTo}${separator}saved=1`);
 }
