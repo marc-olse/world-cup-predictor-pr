@@ -28,7 +28,7 @@ function TeamSelect({
   );
 }
 
-export default async function MyPredictionsPage({
+export default async function TournamentPredictionsPage({
   searchParams,
 }: {
   searchParams: Promise<{ saved?: string }>;
@@ -45,7 +45,7 @@ export default async function MyPredictionsPage({
   return (
     <section className="grid gap-5">
       <div>
-        <h1 className="text-3xl font-bold">My predictions</h1>
+        <h1 className="text-3xl font-bold">Tournament Predictions</h1>
         <p className="mt-2 text-sm text-ink/60">
           Pick your tournament winner and four semi-finalists.
         </p>

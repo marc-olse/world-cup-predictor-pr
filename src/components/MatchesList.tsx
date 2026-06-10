@@ -5,33 +5,44 @@ import { useMemo, useState } from 'react';
 import { CompactPredictionForm } from '@/components/CompactPredictionForm';
 import { countryFlag } from '@/lib/countries';
 import {
+  formatUkDate,
   formatUkKickoffTime,
   getFixtureMeta,
+  getUkScheduleDateKey,
   groupMatchesByUkDate,
 } from '@/lib/fixtures';
 import type { Match, Prediction } from '@/lib/types';
 
-function TeamName({ name }: { name: string }) {
+function TeamBadge({ name }: { name: string }) {
   return (
-    <span className="inline-flex min-w-0 items-center gap-2">
-      <span aria-hidden="true" className="shrink-0 text-2xl leading-none">
+    <div className="grid min-w-0 justify-items-center gap-2 text-center">
+      <span
+        aria-hidden="true"
+        className="grid h-14 w-14 place-items-center rounded-lg bg-white text-4xl shadow-sm ring-1 ring-ink/10"
+      >
         {countryFlag(name)}
       </span>
-      <span className="truncate">{name}</span>
-    </span>
+      <span className="max-w-24 break-words text-xs font-black uppercase leading-tight text-ink sm:max-w-32">
+        {name === 'United States' ? 'USA' : name}
+      </span>
+    </div>
   );
 }
 
-function matchesCountryPrefix(match: Match, query: string) {
+function matchesSearch(match: Match, query: string) {
   const normalizedQuery = query.trim().toLowerCase();
 
   if (!normalizedQuery) {
     return true;
   }
 
-  return [match.home_team, match.away_team].some((team) =>
+  const dateKey = getUkScheduleDateKey(match.kickoff_at);
+  const dateLabel = formatUkDate(`${dateKey}T09:00:00+01:00`).toLowerCase();
+  const teamsMatch = [match.home_team, match.away_team].some((team) =>
     team.toLowerCase().startsWith(normalizedQuery),
   );
+
+  return teamsMatch || dateKey.includes(normalizedQuery) || dateLabel.includes(normalizedQuery);
 }
 
 function formatPredictionScore(
@@ -69,7 +80,7 @@ export function MatchesList({
     [predictions],
   );
   const filteredMatches = useMemo(
-    () => matches.filter((match) => matchesCountryPrefix(match, query)),
+    () => matches.filter((match) => matchesSearch(match, query)),
     [matches, query],
   );
 
@@ -77,11 +88,11 @@ export function MatchesList({
     <div className="grid gap-5">
       <div className="sticky top-0 z-20 -mx-4 border-y border-ink/10 bg-chalk/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:rounded-lg sm:border sm:bg-white sm:shadow-sm">
         <label className="grid gap-2 text-sm font-semibold">
-          Search by country
+          Search by country or date
           <input
             className="field"
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Type first letters, e.g. Bra, Eng, Mex"
+            placeholder="Type Bra, England, 2026-06-12, Friday..."
             type="search"
             value={query}
           />
@@ -99,50 +110,39 @@ export function MatchesList({
                 <h2 className="text-lg font-bold text-ink">{day.label}</h2>
               </div>
 
-              <div className="overflow-hidden rounded-lg border border-ink/10 bg-white shadow-sm">
-                {day.matches.map((match, index) => {
+              <div className="grid gap-3">
+                {day.matches.map((match) => {
                   const fixture = getFixtureMeta(match);
                   const prediction = predictionsByMatch.get(match.id);
 
                   return (
                     <article
-                      className={`grid gap-3 p-4 ${
-                        index === 0 ? '' : 'border-t border-ink/10'
-                      } lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start`}
+                      className="overflow-hidden rounded-lg border border-ink/10 bg-[#ededee] shadow-sm"
                       key={match.id}
                     >
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink/50">
-                          <span>{formatUkKickoffTime(match.kickoff_at)}</span>
-                          {fixture ? <span>{fixture.stage}</span> : null}
-                        </div>
-                        <h3 className="mt-2 grid min-w-0 gap-1 text-base font-bold text-ink sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-center">
-                          <TeamName name={match.home_team} />
-                          <span className="hidden text-sm text-ink/35 sm:inline">vs</span>
-                          <TeamName name={match.away_team} />
-                        </h3>
-                        {fixture ? (
-                          <p className="mt-2 truncate text-sm text-ink/55">
-                            {fixture.venue}
-                          </p>
-                        ) : null}
-                        <p className="mt-2 text-xs font-medium text-ink/50">
-                          Your prediction: {formatPredictionScore(prediction)}
-                        </p>
+                      <div className="border-b border-ink/10 bg-white/55 px-4 py-3 text-center text-xs font-black uppercase tracking-[0.12em] text-ink/65">
+                        {formatUkKickoffTime(match.kickoff_at)} |{' '}
+                        {fixture?.stage ?? 'World Cup'} | {fixture?.venue ?? 'TBC'}
                       </div>
-
-                      <div className="min-w-0 rounded-md border border-ink/10 bg-chalk px-3 py-2">
-                        {persisted.has(match.id) ? (
-                          <CompactPredictionForm
-                            match={match}
-                            prediction={prediction}
-                            returnTo={returnTo}
-                          />
-                        ) : (
-                          <p className="text-sm text-ink/55">
-                            Seed this fixture in Supabase to submit a score.
+                      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-3 px-4 py-4">
+                        <TeamBadge name={match.home_team} />
+                        <div className="grid justify-items-center gap-2">
+                          {persisted.has(match.id) ? (
+                            <CompactPredictionForm
+                              match={match}
+                              prediction={prediction}
+                              returnTo={returnTo}
+                            />
+                          ) : (
+                            <p className="rounded-lg border-2 border-ink/35 bg-white/20 px-4 py-3 text-center text-sm font-semibold text-ink/65">
+                              Seed this fixture in Supabase to submit a score.
+                            </p>
+                          )}
+                          <p className="text-center text-xs font-semibold text-ink/55">
+                            Your prediction: {formatPredictionScore(prediction)}
                           </p>
-                        )}
+                        </div>
+                        <TeamBadge name={match.away_team} />
                       </div>
                     </article>
                   );
