@@ -10,7 +10,7 @@ export default async function Home() {
       <section className="grid gap-6">
         <div className="max-w-3xl">
           <p className="text-sm font-semibold uppercase tracking-wide text-turf">
-            Private World Cup score predictions
+            Primicos World Cup
           </p>
           <h1 className="mt-3 text-4xl font-bold tracking-normal text-ink sm:text-5xl">
             Pick the scores, climb the table.
@@ -37,7 +37,7 @@ export default async function Home() {
     <section className="grid gap-6">
       <div>
         <p className="text-sm text-ink/60">Signed in as {profile?.display_name ?? user.email}</p>
-        <h1 className="mt-2 text-3xl font-bold">Match centre</h1>
+        <h1 className="mt-2 text-3xl font-bold">Primicos World Cup</h1>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Link className="panel hover:border-turf/40" href="/matches/today">
@@ -45,12 +45,12 @@ export default async function Home() {
           <p className="mt-1 text-sm text-ink/60">Predict anything kicking off today.</p>
         </Link>
         <Link className="panel hover:border-turf/40" href="/matches">
-          <h2 className="font-semibold">All matches</h2>
+          <h2 className="font-semibold">Match Predictions</h2>
           <p className="mt-1 text-sm text-ink/60">Browse the full fixture list.</p>
         </Link>
         <Link className="panel hover:border-turf/40" href="/my-predictions">
-          <h2 className="font-semibold">My predictions</h2>
-          <p className="mt-1 text-sm text-ink/60">Check scores and points.</p>
+          <h2 className="font-semibold">Tournament Predictions</h2>
+          <p className="mt-1 text-sm text-ink/60">Pick the winner and semi-finalists.</p>
         </Link>
         <Link className="panel hover:border-turf/40" href="/leaderboard">
           <h2 className="font-semibold">Leaderboard</h2>

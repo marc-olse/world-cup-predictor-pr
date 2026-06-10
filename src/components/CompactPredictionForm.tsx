@@ -19,10 +19,10 @@ function ScoreInput({
   value: string;
 }) {
   return (
-    <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-ink/50">
-      {label}
+    <label>
+      <span className="sr-only">{label}</span>
       <input
-        className="h-11 w-16 rounded-md border border-ink/15 bg-white px-2 text-center text-xl font-black text-ink outline-none transition focus:border-turf focus:ring-2 focus:ring-turf/20 disabled:bg-ink/5 disabled:text-ink/35"
+        className="h-14 w-14 rounded-lg border-2 border-ink/55 bg-white/40 px-2 text-center text-2xl font-black text-ink outline-none transition [appearance:textfield] focus:border-turf focus:ring-2 focus:ring-turf/20 disabled:border-ink/20 disabled:text-ink/35 sm:h-16 sm:w-16 sm:text-3xl [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         disabled={disabled}
         inputMode="numeric"
         min="0"
@@ -57,10 +57,10 @@ export function CompactPredictionForm({
   const closed = Date.now() >= new Date(match.kickoff_at).getTime();
 
   return (
-    <form action={submitPrediction} className="grid gap-2">
+    <form action={submitPrediction} className="grid justify-items-center gap-2">
       <input name="matchId" type="hidden" value={match.id} />
       <input name="returnTo" type="hidden" value={returnTo} />
-      <div className="flex items-end gap-2">
+      <div className="flex items-center gap-2">
         <ScoreInput
           disabled={closed}
           label="Local"
@@ -68,7 +68,7 @@ export function CompactPredictionForm({
           onChange={setHomeScore}
           value={homeScore}
         />
-        <span className="pb-2 text-xl font-black text-ink/35">-</span>
+        <span className="text-3xl font-black text-ink">:</span>
         <ScoreInput
           disabled={closed}
           label="Away"
@@ -76,8 +76,10 @@ export function CompactPredictionForm({
           onChange={setAwayScore}
           value={awayScore}
         />
+      </div>
+      <div className="grid w-full gap-1">
         <button
-          className="btn-primary h-11 min-h-0 bg-coral px-3 py-0 hover:bg-coral/90"
+          className="btn-primary min-h-9 bg-coral px-3 py-1 hover:bg-coral/90"
           disabled={closed}
           type="submit"
         >

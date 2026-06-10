@@ -84,7 +84,7 @@ export function formatUkKickoffTime(value: string) {
   }).format(new Date(value));
 }
 
-export function getUkDateKey(value: string) {
+function getUkDateParts(value: string | Date) {
   const parts = new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
     month: '2-digit',
@@ -93,19 +93,40 @@ export function getUkDateKey(value: string) {
   }).formatToParts(new Date(value));
   const part = (type: string) => parts.find((item) => item.type === type)?.value ?? '';
 
-  return `${part('year')}-${part('month')}-${part('day')}`;
+  return {
+    day: part('day'),
+    month: part('month'),
+    year: part('year'),
+  };
+}
+
+export function getUkDateKey(value: string | Date) {
+  const parts = getUkDateParts(value);
+
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+export function getUkScheduleDateKey(value: string) {
+  const kickoff = new Date(value);
+  const dateKey = getUkDateKey(kickoff);
+  const start = new Date(`${dateKey}T09:00:00+01:00`);
+
+  if (kickoff >= start) {
+    return dateKey;
+  }
+
+  start.setUTCDate(start.getUTCDate() - 1);
+  return getUkDateKey(start);
 }
 
 export function getCurrentUkScheduleWindow(now = new Date()) {
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    timeZone: 'Europe/London',
-    year: 'numeric',
-  }).formatToParts(now);
-  const part = (type: string) => parts.find((item) => item.type === type)?.value ?? '';
-  const dateKey = `${part('year')}-${part('month')}-${part('day')}`;
+  const dateKey = getUkDateKey(now);
   const start = new Date(`${dateKey}T09:00:00+01:00`);
+
+  if (now < start) {
+    start.setUTCDate(start.getUTCDate() - 1);
+  }
+
   const end = new Date(start);
   end.setUTCDate(end.getUTCDate() + 1);
 
@@ -119,7 +140,7 @@ export function getCurrentUkScheduleWindow(now = new Date()) {
 export function groupMatchesByUkDate<T extends Pick<Match, 'kickoff_at'>>(matches: T[]) {
   return matches.reduce<Array<{ dateKey: string; label: string; matches: T[] }>>(
     (groups, match) => {
-      const dateKey = getUkDateKey(match.kickoff_at);
+      const dateKey = getUkScheduleDateKey(match.kickoff_at);
       const group = groups.find((item) => item.dateKey === dateKey);
 
       if (group) {
@@ -127,7 +148,7 @@ export function groupMatchesByUkDate<T extends Pick<Match, 'kickoff_at'>>(matche
       } else {
         groups.push({
           dateKey,
-          label: formatUkDate(match.kickoff_at),
+          label: formatUkDate(`${dateKey}T09:00:00+01:00`),
           matches: [match],
         });
       }

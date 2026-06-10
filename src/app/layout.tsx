@@ -6,7 +6,7 @@ import { AuthButton } from '@/components/AuthButton';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'World Cup Predictions',
+  title: 'Primicos World Cup',
   description: 'A private World Cup score prediction game.',
 };
 
@@ -21,20 +21,20 @@ export default function RootLayout({
         <header className="border-b border-ink/10 bg-white">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
             <Link href="/" className="text-lg font-bold text-ink">
-              World Cup Predictions
+              Primicos World Cup
             </Link>
             <nav className="flex flex-wrap items-center gap-2 text-sm">
               <Link className="rounded-md px-3 py-2 hover:bg-ink/5" href="/matches/today">
                 Today
               </Link>
               <Link className="rounded-md px-3 py-2 hover:bg-ink/5" href="/matches">
-                Matches
+                Match Predictions
               </Link>
               <Link className="rounded-md px-3 py-2 hover:bg-ink/5" href="/submissions">
                 Submitted
               </Link>
               <Link className="rounded-md px-3 py-2 hover:bg-ink/5" href="/my-predictions">
-                My Predictions
+                Tournament Predictions
               </Link>
               <Link className="rounded-md px-3 py-2 hover:bg-ink/5" href="/leaderboard">
                 Leaderboard

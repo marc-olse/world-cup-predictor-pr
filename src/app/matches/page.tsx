@@ -58,10 +58,9 @@ export default async function MatchesPage({
   return (
     <section className="grid gap-5">
       <div>
-        <h1 className="text-3xl font-bold">Full calendar</h1>
+        <h1 className="text-3xl font-bold">Match Predictions</h1>
         <p className="mt-2 text-sm text-ink/60">
-          All 104 fixtures, grouped by UK matchday and listed with UK kick-off
-          times.
+          All 104 fixtures, grouped by matchday with UK kick-off times.
         </p>
       </div>
       <p className="rounded-md border border-ocean/20 bg-ocean/10 px-3 py-2 text-sm text-ink/70">
