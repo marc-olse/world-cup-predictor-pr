@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { requireAdmin } from '@/lib/auth';
-import { calculatePredictionPoints } from '@/lib/scoring';
+import { calculateMatchPredictionPoints } from '@/lib/match-points';
 import { createClient } from '@/lib/supabase/server';
 import type { MatchStatus } from '@/lib/types';
 
@@ -30,7 +30,7 @@ async function recalculateMatchPointsInternal(matchId: string) {
   const supabase = await createClient();
   const { data: match, error: matchError } = await supabase
     .from('matches')
-    .select('id, home_score, away_score')
+    .select('id, home_score, away_score, status')
     .eq('id', matchId)
     .single();
 
@@ -52,12 +52,14 @@ async function recalculateMatchPointsInternal(matchId: string) {
       supabase
         .from('predictions')
         .update({
-          points: calculatePredictionPoints({
-            predictedHomeScore: prediction.predicted_home_score,
-            predictedAwayScore: prediction.predicted_away_score,
-            actualHomeScore: match.home_score,
-            actualAwayScore: match.away_score,
-          }),
+          points:
+            calculateMatchPredictionPoints({
+              status: match.status,
+              predictedHomeScore: prediction.predicted_home_score,
+              predictedAwayScore: prediction.predicted_away_score,
+              actualHomeScore: match.home_score,
+              actualAwayScore: match.away_score,
+            }),
         })
         .eq('id', prediction.id),
     ),
