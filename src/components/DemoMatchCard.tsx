@@ -21,9 +21,11 @@ export function DemoMatchCard({ match }: { match: Match }) {
 
   return (
     <article className="overflow-hidden rounded-lg border border-ink/10 bg-[#ededee] shadow-sm">
-      <div className="border-b border-ink/10 bg-white/55 px-4 py-3 text-center text-xs font-black uppercase tracking-[0.12em] text-ink/65">
+      <div className="border-b border-ink/10 bg-white/55 px-3 py-3 text-center text-[0.58rem] font-black uppercase tracking-normal text-ink/65 sm:px-4 sm:text-xs sm:tracking-[0.12em]">
+        <p className="truncate whitespace-nowrap">
         {formatUkKickoffTime(match.kickoff_at)} | {fixture?.stage ?? 'World Cup'} |{' '}
         {fixture?.venue ?? 'TBC'}
+        </p>
       </div>
       <div className="grid gap-4 px-4 py-5 sm:px-6">
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-3">

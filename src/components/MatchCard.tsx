@@ -43,13 +43,13 @@ export function MatchCard({
 
   return (
     <article className="overflow-hidden rounded-lg border border-ink/10 bg-[#ededee] shadow-sm">
-      <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] items-center gap-2 border-b border-ink/10 bg-white/55 px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-ink/65">
+      <div className="grid grid-cols-[1rem_minmax(0,1fr)_1rem] items-center gap-1 border-b border-ink/10 bg-white/55 px-3 py-3 text-[0.58rem] font-black uppercase tracking-normal text-ink/65 sm:grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] sm:gap-2 sm:px-4 sm:text-xs sm:tracking-[0.12em]">
         <span aria-hidden="true" />
-        <span className="min-w-0 text-center">
+        <span className="min-w-0 truncate whitespace-nowrap text-center">
           {formatUkKickoffTime(match.kickoff_at)} | {fixture?.stage ?? 'World Cup'} |{' '}
           {fixture?.venue ?? 'TBC'}
         </span>
-        <span aria-label={match.is_starred ? 'Star game' : undefined} className="text-right text-base leading-none">
+        <span aria-label={match.is_starred ? 'Star game' : undefined} className="text-right text-sm leading-none sm:text-base">
           {match.is_starred ? '⭐' : null}
         </span>
       </div>

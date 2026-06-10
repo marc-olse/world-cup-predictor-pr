@@ -144,7 +144,7 @@ export default async function TodaysMatchesPage({
         <div>
           <h2 className="text-2xl font-bold">Today&apos;s predictions</h2>
           <p className="mt-1 text-sm text-ink/60">
-            Submit or update scores before each game starts.
+            Submit or update scores before each game starts. Star games count double!
           </p>
         </div>
         {todayMatches.length ? (
