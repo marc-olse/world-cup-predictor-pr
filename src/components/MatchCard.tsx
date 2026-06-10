@@ -43,9 +43,15 @@ export function MatchCard({
 
   return (
     <article className="overflow-hidden rounded-lg border border-ink/10 bg-[#ededee] shadow-sm">
-      <div className="border-b border-ink/10 bg-white/55 px-4 py-3 text-center text-xs font-black uppercase tracking-[0.12em] text-ink/65">
-        {formatUkKickoffTime(match.kickoff_at)} | {fixture?.stage ?? 'World Cup'} |{' '}
-        {fixture?.venue ?? 'TBC'}
+      <div className="grid grid-cols-[1.5rem_minmax(0,1fr)_1.5rem] items-center gap-2 border-b border-ink/10 bg-white/55 px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-ink/65">
+        <span aria-hidden="true" />
+        <span className="min-w-0 text-center">
+          {formatUkKickoffTime(match.kickoff_at)} | {fixture?.stage ?? 'World Cup'} |{' '}
+          {fixture?.venue ?? 'TBC'}
+        </span>
+        <span aria-label={match.is_starred ? 'Star game' : undefined} className="text-right text-base leading-none">
+          {match.is_starred ? '⭐' : null}
+        </span>
       </div>
       <div className="grid gap-4 px-4 py-5 sm:px-6">
         <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-3">

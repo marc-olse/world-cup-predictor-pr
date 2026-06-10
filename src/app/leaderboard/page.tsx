@@ -24,7 +24,7 @@ export default async function LeaderboardPage() {
             </p>
           </div>
         </div>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <div className="rounded-md border border-turf/20 bg-turf/5 p-4">
             <p className="text-3xl font-black text-turf">+3</p>
             <p className="mt-1 font-bold text-ink">Exact score</p>
@@ -45,11 +45,16 @@ export default async function LeaderboardPage() {
             <p className="mt-1 font-bold text-ink">Semi-finalist</p>
             <p className="mt-2 text-sm text-ink/60">For each semi-finalist you predict correctly.</p>
           </div>
+          <div className="rounded-md border border-gold/40 bg-gold/15 p-4">
+            <p className="text-3xl font-black text-ink">x2</p>
+            <p className="mt-1 font-bold text-ink">Star game</p>
+            <p className="mt-2 text-sm text-ink/60">Match points count double for starred games.</p>
+          </div>
         </div>
         <p className="mt-4 rounded-md bg-ink/5 px-3 py-2 text-sm text-ink/65">
-          Exact score receives 3 total points, not 3 plus 1. If an admin updates
-          a finished result or tournament outcome, the leaderboard recalculates
-          automatically.
+          Exact score receives 3 total points, not 3 plus 1. Star games double
+          those match points. If an admin updates a finished result, star setting,
+          or tournament outcome, the leaderboard recalculates automatically.
         </p>
       </section>
     </section>

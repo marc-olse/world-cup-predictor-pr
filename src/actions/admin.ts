@@ -30,7 +30,7 @@ async function recalculateMatchPointsInternal(matchId: string) {
   const supabase = await createClient();
   const { data: match, error: matchError } = await supabase
     .from('matches')
-    .select('id, home_score, away_score, status')
+    .select('id, home_score, away_score, status, is_starred')
     .eq('id', matchId)
     .single();
 
@@ -55,6 +55,7 @@ async function recalculateMatchPointsInternal(matchId: string) {
           points:
             calculateMatchPredictionPoints({
               status: match.status,
+              isStarred: match.is_starred,
               predictedHomeScore: prediction.predicted_home_score,
               predictedAwayScore: prediction.predicted_away_score,
               actualHomeScore: match.home_score,
@@ -129,4 +130,38 @@ export async function recalculateMatchPoints(formData: FormData) {
   revalidatePath('/my-predictions');
   revalidatePath('/submissions');
   redirect('/admin?recalculated=1');
+}
+
+export async function toggleMatchStar(formData: FormData) {
+  await requireAdmin();
+
+  const matchId = formData.get('matchId');
+  const isStarred = formData.get('isStarred') === 'true';
+
+  if (typeof matchId !== 'string' || !matchId) {
+    throw new Error('A match is required.');
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('matches')
+    .update({
+      is_starred: !isStarred,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', matchId);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  await recalculateMatchPointsInternal(matchId);
+
+  revalidatePath('/admin');
+  revalidatePath('/leaderboard');
+  revalidatePath('/matches');
+  revalidatePath('/matches/today');
+  revalidatePath('/my-predictions');
+  revalidatePath('/submissions');
+  redirect('/admin?starred=1');
 }

@@ -1,4 +1,4 @@
-import { recalculateMatchPoints, updateMatchScore } from '@/actions/admin';
+import { recalculateMatchPoints, toggleMatchStar, updateMatchScore } from '@/actions/admin';
 import { Notice } from '@/components/Notice';
 import { requireAdmin } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
@@ -16,7 +16,7 @@ const statuses: MatchStatus[] = ['scheduled', 'live', 'finished'];
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string; recalculated?: string }>;
+  searchParams: Promise<{ saved?: string; recalculated?: string; starred?: string }>;
 }) {
   await requireAdmin();
 
@@ -41,6 +41,8 @@ export default async function AdminPage({
             ? 'Match score saved and points recalculated.'
             : params.recalculated
               ? 'Points recalculated.'
+              : params.starred
+                ? 'Star game setting saved and points recalculated.'
               : undefined
         }
       />
@@ -55,9 +57,16 @@ export default async function AdminPage({
                     {match.home_team} vs {match.away_team}
                   </h2>
                 </div>
-                <span className="rounded-full bg-gold/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-ink">
-                  {match.status}
-                </span>
+                <div className="flex flex-wrap gap-2">
+                  {match.is_starred ? (
+                    <span className="rounded-full bg-gold/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-ink">
+                      Star game · double points
+                    </span>
+                  ) : null}
+                  <span className="rounded-full bg-gold/15 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-ink">
+                    {match.status}
+                  </span>
+                </div>
               </div>
 
               <form
@@ -101,12 +110,28 @@ export default async function AdminPage({
                   Save
                 </button>
               </form>
-              <form action={recalculateMatchPoints} className="mt-3">
-                <input name="matchId" type="hidden" value={match.id} />
-                <button className="btn-secondary" type="submit">
-                  Recalculate points
-                </button>
-              </form>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <form action={toggleMatchStar}>
+                  <input name="matchId" type="hidden" value={match.id} />
+                  <input
+                    name="isStarred"
+                    type="hidden"
+                    value={match.is_starred ? 'true' : 'false'}
+                  />
+                  <button
+                    className={match.is_starred ? 'btn-secondary' : 'btn-primary bg-gold text-ink hover:bg-gold/90'}
+                    type="submit"
+                  >
+                    {match.is_starred ? 'De-star game' : 'Star game'}
+                  </button>
+                </form>
+                <form action={recalculateMatchPoints}>
+                  <input name="matchId" type="hidden" value={match.id} />
+                  <button className="btn-secondary" type="submit">
+                    Recalculate points
+                  </button>
+                </form>
+              </div>
             </article>
           ))}
         </div>
