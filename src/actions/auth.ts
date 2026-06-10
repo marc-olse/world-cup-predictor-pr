@@ -41,6 +41,18 @@ export async function signup(formData: FormData) {
   }
 
   const supabase = await createClient();
+  const { count, error: countError } = await supabase
+    .from('profiles')
+    .select('id', { count: 'exact', head: true });
+
+  if (countError) {
+    redirectWithError('/signup', countError.message);
+  }
+
+  if ((count ?? 0) >= 12) {
+    redirectWithError('/signup', 'The room is full. This group already has 12 active accounts.');
+  }
+
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
