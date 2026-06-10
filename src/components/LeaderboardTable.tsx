@@ -12,10 +12,10 @@ export function LeaderboardTable({ rows }: { rows: LeaderboardRow[] }) {
           <tr>
             <th className="px-4 py-3">Rank</th>
             <th className="px-4 py-3">Display name</th>
-            <th className="px-4 py-3">Total</th>
+            <th className="px-4 py-3">Points</th>
             <th className="px-4 py-3">Exact</th>
             <th className="px-4 py-3">Result</th>
-            <th className="px-4 py-3">Predictions</th>
+            <th className="px-4 py-3">#Predictions sent</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-ink/10">

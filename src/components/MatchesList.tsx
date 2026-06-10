@@ -45,23 +45,6 @@ function matchesSearch(match: Match, query: string) {
   return teamsMatch || dateKey.includes(normalizedQuery) || dateLabel.includes(normalizedQuery);
 }
 
-function formatPredictionScore(
-  prediction?: Pick<Prediction, 'predicted_home_score' | 'predicted_away_score'> | null,
-) {
-  if (!prediction) {
-    return 'None yet';
-  }
-
-  if (
-    prediction.predicted_home_score === null ||
-    prediction.predicted_away_score === null
-  ) {
-    return 'Auto entry';
-  }
-
-  return `${prediction.predicted_home_score}-${prediction.predicted_away_score}`;
-}
-
 export function MatchesList({
   matches,
   persistedMatchIds,
@@ -126,7 +109,7 @@ export function MatchesList({
                       </div>
                       <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-3 px-4 py-4">
                         <TeamBadge name={match.home_team} />
-                        <div className="grid justify-items-center gap-2">
+                        <div className="grid justify-items-center">
                           {persisted.has(match.id) ? (
                             <CompactPredictionForm
                               match={match}
@@ -138,9 +121,6 @@ export function MatchesList({
                               Seed this fixture in Supabase to submit a score.
                             </p>
                           )}
-                          <p className="text-center text-xs font-semibold text-ink/55">
-                            Your prediction: {formatPredictionScore(prediction)}
-                          </p>
                         </div>
                         <TeamBadge name={match.away_team} />
                       </div>

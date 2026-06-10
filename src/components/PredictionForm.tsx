@@ -55,6 +55,9 @@ export function PredictionForm({
     prediction?.predicted_away_score?.toString() ?? '',
   );
   const closed = !forceOpen && Date.now() >= new Date(match.kickoff_at).getTime();
+  const buttonClass = prediction
+    ? 'bg-turf text-white hover:bg-turf/90'
+    : 'border border-turf/30 bg-turf/15 text-turf hover:bg-turf/20';
 
   return (
     <form action={submitPrediction} className="grid justify-items-center gap-3">
@@ -78,12 +81,16 @@ export function PredictionForm({
         />
       </div>
       <div className="grid w-full gap-2">
-        <button className="btn-primary w-full bg-coral hover:bg-coral/90" disabled={closed} type="submit">
-          {prediction ? 'Update' : 'Submit'}
+        <button
+          className={`btn w-full disabled:bg-ink/15 disabled:text-ink/45 ${buttonClass}`}
+          disabled={closed}
+          type="submit"
+        >
+          {closed ? 'Game started' : prediction ? 'Update' : 'Submit'}
         </button>
         {closed ? (
           <p className="text-center text-xs font-semibold text-ink/50">
-            Predictions closed
+            Game started
           </p>
         ) : null}
       </div>
