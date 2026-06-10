@@ -20,13 +20,15 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen">
         <header className="border-b border-ink/10 bg-white">
-          <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-            <Link href="/" className="text-lg font-bold text-ink">
-              Primicos World Cup
-            </Link>
-            <div className="flex flex-wrap items-center gap-2">
-              <MainNav />
+          <div className="mx-auto grid max-w-6xl gap-3 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <Link href="/" className="text-lg font-bold text-ink">
+                Primicos World Cup
+              </Link>
               <AuthButton />
+            </div>
+            <div>
+              <MainNav />
             </div>
           </div>
         </header>
