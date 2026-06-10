@@ -164,6 +164,7 @@ export function SubmissionsList({
                 {day.matches.map((match) => {
                   const fixture = getFixtureMeta(match);
                   const matchSubmissions = submissionsByMatch.get(match.id) ?? [];
+                  const kickoffStarted = Date.now() >= new Date(match.kickoff_at).getTime();
 
                   return (
                     <article
@@ -210,7 +211,11 @@ export function SubmissionsList({
                         </div>
 
                         <div className="min-w-0">
-                        {matchSubmissions.length ? (
+                        {!kickoffStarted ? (
+                          <p className="rounded-md border border-dashed border-ink/15 bg-white/60 px-3 py-2 text-center text-sm font-semibold text-ink/60">
+                            Predictions will be visible after game kick-off.
+                          </p>
+                        ) : matchSubmissions.length ? (
                           <ul className="grid grid-cols-[repeat(auto-fit,minmax(112px,1fr))] gap-1.5">
                             {matchSubmissions.map((submission) => (
                               <li

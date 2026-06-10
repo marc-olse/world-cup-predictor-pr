@@ -101,12 +101,6 @@ export default async function TodaysMatchesPage({
   const supabase = await createClient();
   await supabase.rpc('close_started_matches_with_null_predictions');
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('display_name')
-    .eq('id', user.id)
-    .single();
-
   const currentWindow = getCurrentUkScheduleWindow();
   const nextWindow = getNextFixtureWindow(currentWindow.start);
   const previousWindow = getPreviousFixtureWindow(nextWindow?.start ?? currentWindow.start);
@@ -163,29 +157,21 @@ export default async function TodaysMatchesPage({
         .in('match_id', Array.from(persistedPreviousMatchIds))
         .order('updated_at', { ascending: false })
     : { data: [] as SubmittedPrediction[] };
-
-  const displayName = profile?.display_name ?? user.email ?? 'there';
-
   return (
     <section className="grid gap-8">
       <div className="grid gap-2">
         <p className="text-sm font-semibold uppercase tracking-wide text-turf">
           Daily matchday
         </p>
-        <h1 className="text-3xl font-bold">
-          What are your predictions for the next matchday, {displayName}?
-        </h1>
+        <h1 className="text-3xl font-bold">Next matchday predictions</h1>
+        <p className="text-sm text-ink/60">
+          Submit or update scores before each game starts. Star games count double!
+        </p>
       </div>
 
       <Notice success={params.saved ? 'Prediction saved.' : undefined} />
 
       <section className="grid gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Next matchday predictions</h2>
-          <p className="mt-1 text-sm text-ink/60">
-            Submit or update scores before each game starts. Star games count double!
-          </p>
-        </div>
         {nextMatches.length ? (
           <MatchesList
             matches={nextMatches}
