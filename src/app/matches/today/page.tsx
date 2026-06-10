@@ -6,6 +6,7 @@ import {
   fixtureToMatch,
   formatUkDate,
   getCurrentUkScheduleWindow,
+  getUkScheduleDateKey,
   worldCupFixtures,
 } from '@/lib/fixtures';
 import { createClient } from '@/lib/supabase/server';
@@ -26,6 +27,42 @@ function getStaticMatchesInWindow(start: Date, end: Date) {
       return kickoff >= start && kickoff < end;
     })
     .map(fixtureToMatch);
+}
+
+function scheduleWindowFromDateKey(dateKey: string) {
+  const start = new Date(`${dateKey}T09:00:00+01:00`);
+  const end = new Date(start);
+  end.setUTCDate(end.getUTCDate() + 1);
+
+  return {
+    end,
+    label: formatUkDate(start.toISOString()),
+    start,
+  };
+}
+
+function getFixtureMatchdayKeys() {
+  return Array.from(
+    new Set(worldCupFixtures.map((fixture) => getUkScheduleDateKey(fixture.kickoffAt))),
+  ).sort();
+}
+
+function getNextFixtureWindow(referenceStart: Date) {
+  const referenceTime = referenceStart.getTime();
+  const key = getFixtureMatchdayKeys().find(
+    (dateKey) => scheduleWindowFromDateKey(dateKey).end.getTime() > referenceTime,
+  );
+
+  return key ? scheduleWindowFromDateKey(key) : null;
+}
+
+function getPreviousFixtureWindow(referenceStart: Date) {
+  const referenceTime = referenceStart.getTime();
+  const key = getFixtureMatchdayKeys()
+    .filter((dateKey) => scheduleWindowFromDateKey(dateKey).start.getTime() < referenceTime)
+    .at(-1);
+
+  return key ? scheduleWindowFromDateKey(key) : null;
 }
 
 function mergeWindowMatches(staticMatches: Match[], databaseMatches: Match[]) {
@@ -70,55 +107,60 @@ export default async function TodaysMatchesPage({
     .eq('id', user.id)
     .single();
 
-  const todayWindow = getCurrentUkScheduleWindow();
-  const yesterdayStart = new Date(todayWindow.start);
-  yesterdayStart.setUTCDate(yesterdayStart.getUTCDate() - 1);
-  const yesterdayEnd = new Date(todayWindow.start);
+  const currentWindow = getCurrentUkScheduleWindow();
+  const nextWindow = getNextFixtureWindow(currentWindow.start);
+  const previousWindow = getPreviousFixtureWindow(nextWindow?.start ?? currentWindow.start);
+  const queryStart = previousWindow?.start ?? currentWindow.start;
+  const queryEnd = nextWindow?.end ?? currentWindow.end;
 
   const { data: windowMatches } = await supabase
     .from('matches')
     .select('*')
-    .gte('kickoff_at', yesterdayStart.toISOString())
-    .lt('kickoff_at', todayWindow.end.toISOString())
+    .gte('kickoff_at', queryStart.toISOString())
+    .lt('kickoff_at', queryEnd.toISOString())
     .order('kickoff_at', { ascending: true });
 
   const databaseMatches = windowMatches ?? [];
-  const todayDatabaseMatches = databaseMatches.filter((match) => {
+  const nextDatabaseMatches = nextWindow ? databaseMatches.filter((match) => {
     const kickoff = new Date(match.kickoff_at);
-    return kickoff >= todayWindow.start && kickoff < todayWindow.end;
-  });
-  const yesterdayDatabaseMatches = databaseMatches.filter((match) => {
+    return kickoff >= nextWindow.start && kickoff < nextWindow.end;
+  }) : [];
+  const previousDatabaseMatches = previousWindow ? databaseMatches.filter((match) => {
     const kickoff = new Date(match.kickoff_at);
-    return kickoff >= yesterdayStart && kickoff < yesterdayEnd;
-  });
+    return kickoff >= previousWindow.start && kickoff < previousWindow.end;
+  }) : [];
 
-  const todayMatches = mergeWindowMatches(
-    getStaticMatchesInWindow(todayWindow.start, todayWindow.end),
-    todayDatabaseMatches,
-  );
-  const yesterdayMatches = mergeWindowMatches(
-    getStaticMatchesInWindow(yesterdayStart, yesterdayEnd),
-    yesterdayDatabaseMatches,
+  const nextMatches = nextWindow
+    ? mergeWindowMatches(
+        getStaticMatchesInWindow(nextWindow.start, nextWindow.end),
+        nextDatabaseMatches,
+      )
+    : [];
+  const previousMatches = previousWindow
+    ? mergeWindowMatches(
+        getStaticMatchesInWindow(previousWindow.start, previousWindow.end),
+        previousDatabaseMatches,
+      )
+    : [];
+
+  const persistedNextMatchIds = new Set(nextDatabaseMatches.map((match) => match.id));
+  const persistedPreviousMatchIds = new Set(
+    previousDatabaseMatches.map((match) => match.id),
   );
 
-  const persistedTodayMatchIds = new Set(todayDatabaseMatches.map((match) => match.id));
-  const persistedYesterdayMatchIds = new Set(
-    yesterdayDatabaseMatches.map((match) => match.id),
-  );
-
-  const { data: predictions } = persistedTodayMatchIds.size
+  const { data: predictions } = persistedNextMatchIds.size
     ? await supabase
         .from('predictions')
         .select('*')
         .eq('user_id', user.id)
-        .in('match_id', Array.from(persistedTodayMatchIds))
+        .in('match_id', Array.from(persistedNextMatchIds))
     : { data: [] as Prediction[] };
 
-  const { data: submissions } = persistedYesterdayMatchIds.size
+  const { data: submissions } = persistedPreviousMatchIds.size
     ? await supabase
         .from('predictions')
         .select('*, profiles(display_name)')
-        .in('match_id', Array.from(persistedYesterdayMatchIds))
+        .in('match_id', Array.from(persistedPreviousMatchIds))
         .order('updated_at', { ascending: false })
     : { data: [] as SubmittedPrediction[] };
 
@@ -131,28 +173,26 @@ export default async function TodaysMatchesPage({
           Daily matchday
         </p>
         <h1 className="text-3xl font-bold">
-          What are your predictions for today&apos;s games, {displayName}?
+          What are your predictions for the next matchday, {displayName}?
         </h1>
-        <p className="text-sm text-ink/60">
-          Showing the current matchday slate for {todayWindow.label}.
-        </p>
       </div>
 
       <Notice success={params.saved ? 'Prediction saved.' : undefined} />
 
       <section className="grid gap-4">
         <div>
-          <h2 className="text-2xl font-bold">Today&apos;s predictions</h2>
+          <h2 className="text-2xl font-bold">Next matchday predictions</h2>
           <p className="mt-1 text-sm text-ink/60">
             Submit or update scores before each game starts. Star games count double!
           </p>
         </div>
-        {todayMatches.length ? (
+        {nextMatches.length ? (
           <MatchesList
-            matches={todayMatches}
-            persistedMatchIds={Array.from(persistedTodayMatchIds)}
+            matches={nextMatches}
+            persistedMatchIds={Array.from(persistedNextMatchIds)}
             predictions={predictions ?? []}
             returnTo="/matches/today"
+            showSearch={false}
           />
         ) : (
           <p className="panel text-sm text-ink/65">
@@ -163,14 +203,16 @@ export default async function TodaysMatchesPage({
 
       <section className="grid gap-4 border-t border-ink/10 pt-8">
         <div>
-          <h2 className="text-2xl font-bold">Yesterday&apos;s results</h2>
+          <h2 className="text-2xl font-bold">Previous matchday results</h2>
           <p className="mt-1 text-sm text-ink/60">
-            Results and group predictions for {formatUkDate(yesterdayStart.toISOString())}.
+            Results and group predictions
+            {previousWindow ? ` for ${previousWindow.label}.` : '.'}
           </p>
         </div>
-        {yesterdayMatches.length ? (
+        {previousMatches.length ? (
           <SubmissionsList
-            matches={yesterdayMatches}
+            matches={previousMatches}
+            showSearch={false}
             submissions={((submissions ?? []) as SubmittedPrediction[])}
           />
         ) : (

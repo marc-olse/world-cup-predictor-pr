@@ -108,9 +108,11 @@ function matchesSearch(match: Match, query: string) {
 export function SubmissionsList({
   matches,
   submissions,
+  showSearch = true,
 }: {
   matches: Match[];
   submissions: SubmittedPrediction[];
+  showSearch?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const submissionsByMatch = useMemo(() => {
@@ -132,21 +134,23 @@ export function SubmissionsList({
 
   return (
     <div className="grid gap-5">
-      <div className="sticky top-0 z-20 -mx-4 border-y border-ink/10 bg-chalk/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:rounded-lg sm:border sm:bg-white sm:shadow-sm">
-        <label className="grid gap-2 text-sm font-semibold">
-          Search by country or date
-          <input
-            className="field"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Type Bra, England, 2026-06-12, Friday..."
-            type="search"
-            value={query}
-          />
-        </label>
-        <p className="mt-2 text-xs text-ink/55">
-          Showing {filteredMatches.length} of {matches.length} games.
-        </p>
-      </div>
+      {showSearch ? (
+        <div className="sticky top-0 z-20 -mx-4 border-y border-ink/10 bg-chalk/95 px-4 py-3 backdrop-blur sm:static sm:mx-0 sm:rounded-lg sm:border sm:bg-white sm:shadow-sm">
+          <label className="grid gap-2 text-sm font-semibold">
+            Search by country or date
+            <input
+              className="field"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Type Bra, England, 2026-06-12, Friday..."
+              type="search"
+              value={query}
+            />
+          </label>
+          <p className="mt-2 text-xs text-ink/55">
+            Showing {filteredMatches.length} of {matches.length} games.
+          </p>
+        </div>
+      ) : null}
 
       {filteredMatches.length ? (
         <div className="grid gap-7">
