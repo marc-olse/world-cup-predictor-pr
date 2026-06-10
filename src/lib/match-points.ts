@@ -3,6 +3,7 @@ import type { MatchStatus } from './types';
 
 export function calculateMatchPredictionPoints(params: {
   status: MatchStatus;
+  isStarred?: boolean;
   predictedHomeScore: number | null;
   predictedAwayScore: number | null;
   actualHomeScore: number | null;
@@ -12,5 +13,7 @@ export function calculateMatchPredictionPoints(params: {
     return 0;
   }
 
-  return calculatePredictionPoints(params);
+  const points = calculatePredictionPoints(params);
+
+  return params.isStarred ? points * 2 : points;
 }

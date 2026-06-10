@@ -35,6 +35,7 @@ export function fixtureToMatch(fixture: (typeof worldCupFixtures)[number]): Matc
     away_team: fixture.awayTeam,
     home_score: null,
     away_score: null,
+    is_starred: false,
     status: 'scheduled',
     created_at: '2026-06-09T00:00:00.000Z',
     updated_at: '2026-06-09T00:00:00.000Z',

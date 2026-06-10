@@ -15,6 +15,7 @@ export type Match = {
   away_team: string;
   home_score: number | null;
   away_score: number | null;
+  is_starred: boolean;
   status: MatchStatus;
   created_at: string;
   updated_at: string;
@@ -75,6 +76,7 @@ export type Database = {
           away_team: string;
           home_score?: number | null;
           away_score?: number | null;
+          is_starred?: boolean;
           status?: MatchStatus;
           created_at?: string;
           updated_at?: string;
@@ -86,6 +88,7 @@ export type Database = {
           away_team?: string;
           home_score?: number | null;
           away_score?: number | null;
+          is_starred?: boolean;
           status?: MatchStatus;
           updated_at?: string;
         };

@@ -41,7 +41,7 @@ export function CompactPredictionForm({
   prediction,
   returnTo = '/matches',
 }: {
-  match: Pick<Match, 'id' | 'kickoff_at'>;
+  match: Pick<Match, 'id' | 'kickoff_at' | 'is_starred'>;
   prediction?: Pick<
     Prediction,
     'predicted_home_score' | 'predicted_away_score'
@@ -55,9 +55,13 @@ export function CompactPredictionForm({
     prediction?.predicted_away_score?.toString() ?? '',
   );
   const closed = Date.now() >= new Date(match.kickoff_at).getTime();
-  const buttonClass = prediction
-    ? 'bg-turf text-white hover:bg-turf/90'
-    : 'border border-turf/30 bg-turf/15 text-turf hover:bg-turf/20';
+  const buttonClass = match.is_starred
+    ? prediction
+      ? 'bg-gold text-ink hover:bg-gold/90'
+      : 'border border-gold/50 bg-gold/20 text-ink hover:bg-gold/30'
+    : prediction
+      ? 'bg-turf text-white hover:bg-turf/90'
+      : 'border border-turf/30 bg-turf/15 text-turf hover:bg-turf/20';
 
   return (
     <form action={submitPrediction} className="grid justify-items-center gap-2">

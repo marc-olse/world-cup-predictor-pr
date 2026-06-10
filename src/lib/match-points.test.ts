@@ -38,4 +38,17 @@ describe('calculateMatchPredictionPoints', () => {
       }),
     ).toBe(3);
   });
+
+  it('doubles points when match is starred', () => {
+    expect(
+      calculateMatchPredictionPoints({
+        status: 'finished',
+        isStarred: true,
+        predictedHomeScore: 2,
+        predictedAwayScore: 1,
+        actualHomeScore: 2,
+        actualAwayScore: 1,
+      }),
+    ).toBe(6);
+  });
 });
