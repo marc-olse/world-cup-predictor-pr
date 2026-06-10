@@ -60,12 +60,6 @@ export function DemoPredictionForm({
   const [awayScore, setAwayScore] = useState('');
   const [saved, setSaved] = useState(false);
 
-  function generateRandomPrediction() {
-    setHomeScore(String(Math.floor(Math.random() * 5)));
-    setAwayScore(String(Math.floor(Math.random() * 5)));
-    setSaved(false);
-  }
-
   function savePrediction() {
     window.localStorage.setItem(
       `demo-prediction:${match.id}`,
@@ -96,9 +90,6 @@ export function DemoPredictionForm({
         />
       </div>
       <div className="flex flex-wrap items-center justify-center gap-2">
-        <button className="btn-secondary border-ocean/25 text-ocean" onClick={generateRandomPrediction} type="button">
-          Generate random
-        </button>
         <button className="btn-primary min-w-36 bg-coral hover:bg-coral/90" onClick={savePrediction} type="button">
           Submit
         </button>

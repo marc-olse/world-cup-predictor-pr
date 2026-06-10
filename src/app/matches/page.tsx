@@ -1,11 +1,7 @@
-import { DemoMatchCard } from '@/components/DemoMatchCard';
-import { MatchCard } from '@/components/MatchCard';
+import { MatchesList } from '@/components/MatchesList';
+import { Notice } from '@/components/Notice';
 import { requireUser } from '@/lib/auth';
-import {
-  fixtureToMatch,
-  groupMatchesByUkDate,
-  worldCupFixtures,
-} from '@/lib/fixtures';
+import { fixtureToMatch, worldCupFixtures } from '@/lib/fixtures';
 import { createClient } from '@/lib/supabase/server';
 import type { Match, Prediction } from '@/lib/types';
 
@@ -13,9 +9,15 @@ function matchKey(match: Pick<Match, 'home_team' | 'away_team' | 'kickoff_at'>) 
   return `${match.home_team}|${match.away_team}|${new Date(match.kickoff_at).getTime()}`;
 }
 
-export default async function MatchesPage() {
+export default async function MatchesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ saved?: string }>;
+}) {
   const user = await requireUser();
+  const params = await searchParams;
   const supabase = await createClient();
+  await supabase.rpc('close_started_matches_with_null_predictions');
 
   const { data: databaseMatches } = await supabase
     .from('matches')
@@ -53,10 +55,6 @@ export default async function MatchesPage() {
         .in('match_id', matchIds)
     : { data: [] as Prediction[] };
 
-  const predictionsByMatch = new Map(
-    (predictions ?? []).map((prediction) => [prediction.match_id, prediction]),
-  );
-
   return (
     <section className="grid gap-5">
       <div>
@@ -71,28 +69,13 @@ export default async function MatchesPage() {
         updated Supabase seed if you want all fixtures to be stored for shared
         predictions.
       </p>
-      <div className="grid gap-8">
-        {groupMatchesByUkDate(matches).map((day) => (
-          <section className="grid gap-3" key={day.dateKey}>
-            <h2 className="text-xl font-bold">{day.label}</h2>
-            <div className="grid gap-4">
-              {day.matches.map((match) =>
-                persistedMatchIds.has(match.id) ? (
-                  <MatchCard
-                    forcePredictionOpen={match.status !== 'finished'}
-                    key={match.id}
-                    match={match}
-                    prediction={predictionsByMatch.get(match.id)}
-                    showForm
-                  />
-                ) : (
-                  <DemoMatchCard key={match.id} match={match} />
-                ),
-              )}
-            </div>
-          </section>
-        ))}
-      </div>
+      <Notice success={params.saved ? 'Prediction saved.' : undefined} />
+      <MatchesList
+        matches={matches}
+        persistedMatchIds={Array.from(persistedMatchIds)}
+        predictions={predictions ?? []}
+        returnTo="/matches"
+      />
     </section>
   );
 }

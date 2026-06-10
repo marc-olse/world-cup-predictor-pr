@@ -72,6 +72,7 @@ export function PredictionForm({
   match,
   prediction,
   forceOpen = false,
+  returnTo = '/matches/today',
 }: {
   match: Pick<Match, 'id' | 'kickoff_at' | 'home_team' | 'away_team'>;
   prediction?: Pick<
@@ -79,6 +80,7 @@ export function PredictionForm({
     'predicted_home_score' | 'predicted_away_score'
   > | null;
   forceOpen?: boolean;
+  returnTo?: string;
 }) {
   const [homeScore, setHomeScore] = useState(
     prediction?.predicted_home_score?.toString() ?? '',
@@ -88,14 +90,10 @@ export function PredictionForm({
   );
   const closed = !forceOpen && Date.now() >= new Date(match.kickoff_at).getTime();
 
-  function generateRandomPrediction() {
-    setHomeScore(String(Math.floor(Math.random() * 5)));
-    setAwayScore(String(Math.floor(Math.random() * 5)));
-  }
-
   return (
     <form action={submitPrediction} className="grid justify-items-center gap-5">
       <input name="matchId" type="hidden" value={match.id} />
+      <input name="returnTo" type="hidden" value={returnTo} />
       <div className="flex items-center justify-center gap-3 sm:gap-8">
         <ScoreStepper
           disabled={closed}
@@ -114,14 +112,6 @@ export function PredictionForm({
         />
       </div>
       <div className="flex flex-wrap items-center justify-center gap-2">
-        <button
-          className="btn-secondary border-ocean/25 text-ocean"
-          disabled={closed}
-          onClick={generateRandomPrediction}
-          type="button"
-        >
-          Generate random
-        </button>
         <button className="btn-primary min-w-36 bg-coral hover:bg-coral/90" disabled={closed} type="submit">
           {prediction ? 'Update' : 'Submit'}
         </button>
