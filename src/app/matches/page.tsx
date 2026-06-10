@@ -63,11 +63,6 @@ export default async function MatchesPage({
           All 104 fixtures, grouped by matchday with UK kick-off times.
         </p>
       </div>
-      <p className="rounded-md border border-ocean/20 bg-ocean/10 px-3 py-2 text-sm text-ink/70">
-        Fixture source: Sky Sports day-by-day World Cup 2026 schedule. Run the
-        updated Supabase seed if you want all fixtures to be stored for shared
-        predictions.
-      </p>
       <Notice success={params.saved ? 'Prediction saved.' : undefined} />
       <MatchesList
         matches={matches}

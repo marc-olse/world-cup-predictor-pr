@@ -55,6 +55,9 @@ export function CompactPredictionForm({
     prediction?.predicted_away_score?.toString() ?? '',
   );
   const closed = Date.now() >= new Date(match.kickoff_at).getTime();
+  const buttonClass = prediction
+    ? 'bg-turf text-white hover:bg-turf/90'
+    : 'border border-turf/30 bg-turf/15 text-turf hover:bg-turf/20';
 
   return (
     <form action={submitPrediction} className="grid justify-items-center gap-2">
@@ -79,15 +82,15 @@ export function CompactPredictionForm({
       </div>
       <div className="grid w-full gap-1">
         <button
-          className="btn-primary min-h-9 bg-coral px-3 py-1 hover:bg-coral/90"
+          className={`btn min-h-9 px-3 py-1 disabled:bg-ink/15 disabled:text-ink/45 ${buttonClass}`}
           disabled={closed}
           type="submit"
         >
-          {prediction ? 'Update' : 'Submit'}
+          {closed ? 'Game started' : prediction ? 'Update' : 'Submit'}
         </button>
       </div>
       {closed ? (
-        <p className="text-xs font-medium text-ink/50">Predictions closed</p>
+        <p className="text-xs font-medium text-ink/50">Game started</p>
       ) : null}
     </form>
   );

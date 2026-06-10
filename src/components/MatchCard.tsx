@@ -75,10 +75,7 @@ export function MatchCard({
 
         <div className="rounded-lg border-2 border-ink/55 bg-white/20 px-4 py-3 text-sm font-bold text-ink">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <span>Result: {hasFinalScore ? `${match.home_score}-${match.away_score}` : 'Not entered'}</span>
-            <span>Your prediction: {prediction
-              ? `${prediction.predicted_home_score ?? '-'}-${prediction.predicted_away_score ?? '-'}`
-              : 'None yet'}</span>
+            <span>Result: {hasFinalScore ? `${match.home_score}-${match.away_score}` : 'Pending'}</span>
             <span className="uppercase tracking-wide text-ocean">{statusLabel(match.status)}</span>
           </div>
           <p className="mt-2 text-xs text-ink/55">

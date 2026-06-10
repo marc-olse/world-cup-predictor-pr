@@ -64,9 +64,9 @@ export default async function SubmissionsPage() {
   return (
     <section className="grid gap-6">
       <div>
-        <h1 className="text-3xl font-bold">Submitted results</h1>
+        <h1 className="text-3xl font-bold">Results</h1>
         <p className="mt-2 text-sm text-ink/60">
-          Latest stored score from every player, listed by game.
+          Match results and every stored prediction from the group.
         </p>
       </div>
 

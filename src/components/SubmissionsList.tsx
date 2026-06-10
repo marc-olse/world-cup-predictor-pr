@@ -10,6 +10,7 @@ import {
   getUkScheduleDateKey,
   groupMatchesByUkDate,
 } from '@/lib/fixtures';
+import { calculatePredictionPoints } from '@/lib/scoring';
 import type { Match, Prediction, Profile } from '@/lib/types';
 
 type SubmittedPrediction = Prediction & {
@@ -47,14 +48,45 @@ function formatPredictionScore(
 
 function formatRealResult(match: Match) {
   if (match.home_score === null || match.away_score === null) {
-    return 'Not entered';
+    return 'Pending';
   }
 
   return `${match.home_score}-${match.away_score}`;
 }
 
 function statusLabel(status: Match['status']) {
-  return status.toUpperCase();
+  return status[0].toUpperCase() + status.slice(1);
+}
+
+function statusClass(status: Match['status']) {
+  if (status === 'finished') {
+    return 'bg-turf/15 text-turf ring-turf/20';
+  }
+
+  if (status === 'live') {
+    return 'bg-gold/20 text-ink ring-gold/30';
+  }
+
+  return 'bg-ink/5 text-ink/55 ring-ink/10';
+}
+
+function predictionClass(match: Match, prediction: SubmittedPrediction) {
+  const points = calculatePredictionPoints({
+    actualAwayScore: match.away_score,
+    actualHomeScore: match.home_score,
+    predictedAwayScore: prediction.predicted_away_score,
+    predictedHomeScore: prediction.predicted_home_score,
+  });
+
+  if (points === 3) {
+    return 'border-turf/30 bg-turf/15';
+  }
+
+  if (points === 1) {
+    return 'border-gold/40 bg-gold/20';
+  }
+
+  return 'border-ink/10 bg-white/75';
 }
 
 function matchesSearch(match: Match, query: string) {
@@ -138,18 +170,28 @@ export function SubmissionsList({
                         {formatUkKickoffTime(match.kickoff_at)} |{' '}
                         {fixture?.stage ?? 'World Cup'} | {fixture?.venue ?? 'TBC'}
                       </div>
-                      <div className="grid gap-4 px-4 py-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(280px,1.1fr)] lg:items-start">
+                      <div className="grid gap-3 px-4 py-4 lg:grid-cols-[minmax(0,0.72fr)_minmax(340px,1.28fr)] lg:items-start">
                         <div className="grid gap-3">
-                          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-3">
+                          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2">
                             <TeamBadge name={match.home_team} />
                             <div className="grid justify-items-center gap-2 pt-2 text-center">
                               <p className="text-[0.65rem] font-black uppercase tracking-[0.16em] text-ink/45">
                                 Result
                               </p>
-                              <p className="text-3xl font-black text-ink">
+                              <p
+                                className={`font-black ${
+                                  match.home_score === null || match.away_score === null
+                                    ? 'text-sm text-ink/40'
+                                    : 'text-2xl text-ink'
+                                }`}
+                              >
                                 {formatRealResult(match)}
                               </p>
-                              <span className="rounded-full bg-white/70 px-3 py-1 text-[0.65rem] font-black uppercase tracking-[0.14em] text-ocean">
+                              <span
+                                className={`rounded-full px-3 py-1 text-[0.65rem] font-black uppercase tracking-[0.14em] ring-1 ${statusClass(
+                                  match.status,
+                                )}`}
+                              >
                                 {statusLabel(match.status)}
                               </span>
                             </div>
@@ -159,17 +201,20 @@ export function SubmissionsList({
 
                         <div className="min-w-0">
                         {matchSubmissions.length ? (
-                          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                          <ul className="grid grid-cols-[repeat(auto-fit,minmax(112px,1fr))] gap-1.5">
                             {matchSubmissions.map((submission) => (
                               <li
-                                className="rounded-lg border border-ink/10 bg-white/75 px-3 py-2"
+                                className={`rounded-md border px-2 py-1.5 ${predictionClass(
+                                  match,
+                                  submission,
+                                )}`}
                                 key={submission.id}
                               >
-                                <div className="flex items-baseline justify-between gap-3">
-                                  <p className="truncate text-sm font-semibold">
+                                <div className="flex items-center justify-between gap-2">
+                                  <p className="min-w-0 truncate text-xs font-semibold">
                                     {submission.profiles?.display_name ?? 'Player'}
                                   </p>
-                                  <p className="shrink-0 text-lg font-bold text-turf">
+                                  <p className="shrink-0 text-sm font-black text-ink">
                                     {formatPredictionScore(submission)}
                                   </p>
                                 </div>
