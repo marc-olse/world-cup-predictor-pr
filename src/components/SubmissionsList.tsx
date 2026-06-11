@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { countryFlag } from '@/lib/countries';
 import {
@@ -115,6 +115,28 @@ export function SubmissionsList({
   showSearch?: boolean;
 }) {
   const [query, setQuery] = useState('');
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+  const kickoffTimes = useMemo(
+    () =>
+      matches
+        .map((match) => new Date(match.kickoff_at).getTime())
+        .sort((first, second) => first - second),
+    [matches],
+  );
+  useEffect(() => {
+    const nextKickoff = kickoffTimes.find((kickoff) => kickoff > currentTime);
+
+    if (!nextKickoff) {
+      return;
+    }
+
+    const timer = setTimeout(
+      () => setCurrentTime(Date.now()),
+      Math.min(Math.max(0, nextKickoff - Date.now() + 25), 2_147_483_647),
+    );
+
+    return () => clearTimeout(timer);
+  }, [currentTime, kickoffTimes]);
   const submissionsByMatch = useMemo(() => {
     const grouped = new Map<string, SubmittedPrediction[]>();
 
@@ -164,7 +186,8 @@ export function SubmissionsList({
                 {day.matches.map((match) => {
                   const fixture = getFixtureMeta(match);
                   const matchSubmissions = submissionsByMatch.get(match.id) ?? [];
-                  const kickoffStarted = Date.now() >= new Date(match.kickoff_at).getTime();
+                  const kickoffStarted =
+                    currentTime >= new Date(match.kickoff_at).getTime();
 
                   return (
                     <article

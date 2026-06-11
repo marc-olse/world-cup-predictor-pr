@@ -51,4 +51,17 @@ describe('calculateMatchPredictionPoints', () => {
       }),
     ).toBe(6);
   });
+
+  it('awards zero points when a user did not submit a score', () => {
+    expect(
+      calculateMatchPredictionPoints({
+        status: 'finished',
+        isStarred: true,
+        predictedHomeScore: null,
+        predictedAwayScore: null,
+        actualHomeScore: 2,
+        actualAwayScore: 1,
+      }),
+    ).toBe(0);
+  });
 });

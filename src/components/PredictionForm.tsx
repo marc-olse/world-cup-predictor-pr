@@ -3,7 +3,9 @@
 import { useState } from 'react';
 
 import { submitPrediction } from '@/actions/predictions';
+import { getPredictionResultReason } from '@/lib/prediction-result';
 import type { Match, Prediction } from '@/lib/types';
+import { useKickoffLock } from '@/lib/use-kickoff-lock';
 
 function ScoreBox({
   disabled,
@@ -40,10 +42,20 @@ export function PredictionForm({
   forceOpen = false,
   returnTo = '/matches/today',
 }: {
-  match: Pick<Match, 'id' | 'kickoff_at' | 'home_team' | 'away_team' | 'is_starred'>;
+  match: Pick<
+    Match,
+    | 'id'
+    | 'kickoff_at'
+    | 'home_team'
+    | 'away_team'
+    | 'is_starred'
+    | 'status'
+    | 'home_score'
+    | 'away_score'
+  >;
   prediction?: Pick<
     Prediction,
-    'predicted_home_score' | 'predicted_away_score'
+    'predicted_home_score' | 'predicted_away_score' | 'points'
   > | null;
   forceOpen?: boolean;
   returnTo?: string;
@@ -54,7 +66,30 @@ export function PredictionForm({
   const [awayScore, setAwayScore] = useState(
     prediction?.predicted_away_score?.toString() ?? '',
   );
-  const closed = !forceOpen && Date.now() >= new Date(match.kickoff_at).getTime();
+  const kickoffLocked = useKickoffLock(match.kickoff_at);
+  const closed = !forceOpen && kickoffLocked;
+  const finished =
+    match.status === 'finished' &&
+    match.home_score !== null &&
+    match.away_score !== null;
+  const formDisabled = closed || finished;
+  const points = prediction?.points ?? 0;
+  const pointsClass =
+    points >= 7
+      ? 'text-gold'
+      : points > 2
+        ? 'text-turf'
+        : points > 0
+          ? 'text-amber-600'
+          : 'text-ink/60';
+  const pointsReason = finished
+    ? getPredictionResultReason({
+        predictedHomeScore: prediction?.predicted_home_score,
+        predictedAwayScore: prediction?.predicted_away_score,
+        actualHomeScore: match.home_score,
+        actualAwayScore: match.away_score,
+      })
+    : 'Bad luck';
   const buttonClass = match.is_starred
     ? prediction
       ? 'bg-gold text-ink hover:bg-gold/90'
@@ -62,6 +97,9 @@ export function PredictionForm({
     : prediction
       ? 'bg-turf text-white hover:bg-turf/90'
       : 'border border-turf/30 bg-turf/15 text-turf hover:bg-turf/20';
+  const disabledButtonClass = finished
+    ? 'disabled:border disabled:border-ocean/20 disabled:bg-ocean/10 disabled:text-ocean disabled:opacity-100'
+    : 'disabled:bg-ink/[0.08] disabled:text-ink/75 disabled:opacity-100';
 
   return (
     <form action={submitPrediction} className="grid justify-items-center gap-3">
@@ -69,7 +107,7 @@ export function PredictionForm({
       <input name="returnTo" type="hidden" value={returnTo} />
       <div className="flex items-center justify-center gap-3">
         <ScoreBox
-          disabled={closed}
+          disabled={formDisabled}
           label="Local score"
           name="predictedHomeScore"
           onChange={setHomeScore}
@@ -77,27 +115,58 @@ export function PredictionForm({
         />
         <span className="text-4xl font-black text-ink">:</span>
         <ScoreBox
-          disabled={closed}
+          disabled={formDisabled}
           label="Away score"
           name="predictedAwayScore"
           onChange={setAwayScore}
           value={awayScore}
         />
       </div>
-      <div className="grid w-full gap-2">
-        <button
-          className={`btn w-full disabled:bg-ink/15 disabled:text-ink/45 ${buttonClass}`}
-          disabled={closed}
-          type="submit"
-        >
-          {closed ? 'Game started' : prediction ? 'Update' : 'Submit'}
-        </button>
-        {closed ? (
-          <p className="text-center text-xs font-semibold text-ink/50">
-            Game started
-          </p>
-        ) : null}
-      </div>
+      {finished ? (
+        <div className="grid w-56 max-w-[72vw]">
+          <button
+            className="grid h-12 w-full grid-cols-[4.5rem_minmax(0,1fr)_3.5rem] overflow-hidden rounded-md border border-ocean/25 bg-white p-0 text-ink shadow-sm disabled:cursor-not-allowed"
+            disabled
+            type="button"
+          >
+            <span className="flex min-w-0 flex-col items-center justify-center border-r border-ink/10 text-center leading-none">
+              <span className="text-[0.48rem] font-bold uppercase text-ink/45">
+                Finished
+              </span>
+              <span className="mt-1 text-lg font-black tabular-nums">
+                {match.home_score} - {match.away_score}
+              </span>
+            </span>
+            <span className="flex min-w-0 items-center justify-center px-1.5 text-center text-[0.62rem] font-bold leading-tight text-ink/70">
+              <span>
+                {pointsReason}
+                {match.is_starred && points > 0 ? ' ⭐' : ''}
+              </span>
+            </span>
+            <span
+              className={`flex min-w-0 flex-col items-center justify-center border-l border-ink/10 text-center leading-none ${pointsClass}`}
+            >
+              <span className="text-[0.48rem] font-bold uppercase text-ink/45">
+                Pts
+              </span>
+              <span className="mt-1 text-base font-black tabular-nums">
+                {points > 0 ? '+' : ''}
+                {points}
+              </span>
+            </span>
+          </button>
+        </div>
+      ) : (
+        <div className="grid w-full gap-2">
+          <button
+            className={`btn h-12 min-h-12 w-full overflow-hidden p-0 ${disabledButtonClass} ${buttonClass}`}
+            disabled={formDisabled}
+            type="submit"
+          >
+            {closed ? 'Game started' : prediction ? 'Update' : 'Submit'}
+          </button>
+        </div>
+      )}
     </form>
   );
 }

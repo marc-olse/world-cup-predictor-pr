@@ -47,7 +47,7 @@ async function recalculateMatchPointsInternal(matchId: string) {
     throw new Error(predictionsError.message);
   }
 
-  await Promise.all(
+  const pointUpdates = await Promise.all(
     (predictions ?? []).map((prediction) =>
       supabase
         .from('predictions')
@@ -65,6 +65,12 @@ async function recalculateMatchPointsInternal(matchId: string) {
         .eq('id', prediction.id),
     ),
   );
+
+  const failedUpdate = pointUpdates.find(({ error }) => error);
+
+  if (failedUpdate?.error) {
+    throw new Error(failedUpdate.error.message);
+  }
 }
 
 export async function updateMatchScore(formData: FormData) {
