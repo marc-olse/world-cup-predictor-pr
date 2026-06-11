@@ -125,31 +125,31 @@ export function PredictionForm({
       {finished ? (
         <div className="grid w-56 max-w-[72vw]">
           <button
-            className="grid h-12 w-full grid-cols-[4.5rem_minmax(0,1fr)_3.5rem] overflow-hidden rounded-md border border-ocean/25 bg-white p-0 text-ink shadow-sm disabled:cursor-not-allowed"
+            className="grid h-16 w-full grid-cols-[4.5rem_minmax(0,1fr)_3.5rem] overflow-hidden rounded-md border border-ocean/25 bg-white p-0 text-ink shadow-sm disabled:cursor-not-allowed sm:h-12"
             disabled
             type="button"
           >
-            <span className="flex min-w-0 flex-col items-center justify-center border-r border-ink/10 text-center leading-none">
+            <span className="flex min-w-0 flex-col items-center justify-center gap-1.5 border-r border-ink/10 text-center leading-none sm:gap-1">
               <span className="text-[0.48rem] font-bold uppercase text-ink/45">
                 Finished
               </span>
-              <span className="mt-1 text-lg font-black tabular-nums">
+              <span className="text-xl font-black tabular-nums sm:text-lg">
                 {match.home_score} - {match.away_score}
               </span>
             </span>
-            <span className="flex min-w-0 items-center justify-center px-1.5 text-center text-[0.62rem] font-bold leading-tight text-ink/70">
+            <span className="flex min-w-0 items-center justify-center px-2 text-center text-xs font-bold leading-tight text-ink/70 sm:px-1.5 sm:text-[0.62rem]">
               <span>
                 {pointsReason}
                 {match.is_starred && points > 0 ? ' ⭐' : ''}
               </span>
             </span>
             <span
-              className={`flex min-w-0 flex-col items-center justify-center border-l border-ink/10 text-center leading-none ${pointsClass}`}
+              className={`flex min-w-0 flex-col items-center justify-center gap-1.5 border-l border-ink/10 text-center leading-none sm:gap-1 ${pointsClass}`}
             >
               <span className="text-[0.48rem] font-bold uppercase text-ink/45">
                 Pts
               </span>
-              <span className="mt-1 text-base font-black tabular-nums">
+              <span className="text-lg font-black tabular-nums sm:text-base">
                 {points > 0 ? '+' : ''}
                 {points}
               </span>
