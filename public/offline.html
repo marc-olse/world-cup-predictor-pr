@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#16784b" />
+    <title>Primicos World Cup - Offline</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      body {
+        min-height: 100vh;
+        margin: 0;
+        display: grid;
+        place-items: center;
+        padding: max(24px, env(safe-area-inset-top))
+          max(20px, env(safe-area-inset-right))
+          max(24px, env(safe-area-inset-bottom))
+          max(20px, env(safe-area-inset-left));
+        box-sizing: border-box;
+        background: #f7f8f3;
+        color: #16211f;
+      }
+      main {
+        width: min(100%, 360px);
+        text-align: center;
+      }
+      img {
+        width: 88px;
+        height: 88px;
+        border-radius: 18px;
+      }
+      h1 {
+        margin: 20px 0 8px;
+        font-size: 1.5rem;
+      }
+      p {
+        margin: 0;
+        color: rgba(22, 33, 31, 0.68);
+        line-height: 1.5;
+      }
+      button {
+        margin-top: 22px;
+        min-height: 44px;
+        border: 0;
+        border-radius: 6px;
+        padding: 10px 18px;
+        background: #16784b;
+        color: white;
+        font: inherit;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img alt="" src="/icons/icon-192.png" />
+      <h1>You are offline</h1>
+      <p>
+        Primicos World Cup needs an internet connection for current fixtures,
+        predictions, results, and leaderboard data.
+      </p>
+      <button onclick="window.location.reload()" type="button">Try again</button>
+    </main>
+  </body>
+</html>
