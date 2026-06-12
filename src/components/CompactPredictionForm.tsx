@@ -3,7 +3,7 @@
 import { useState } from 'react';
 
 import { submitPrediction } from '@/actions/predictions';
-import { getPredictionResultReason } from '@/lib/prediction-result';
+import { FinishedPredictionResult } from '@/components/FinishedPredictionResult';
 import type { Match, Prediction } from '@/lib/types';
 import { useKickoffLock } from '@/lib/use-kickoff-lock';
 
@@ -70,23 +70,6 @@ export function CompactPredictionForm({
     match.home_score !== null &&
     match.away_score !== null;
   const formDisabled = closed || finished;
-  const points = prediction?.points ?? 0;
-  const pointsClass =
-    points >= 7
-      ? 'text-gold'
-      : points > 2
-        ? 'text-turf'
-        : points > 0
-          ? 'text-amber-600'
-          : 'text-ink/60';
-  const pointsReason = finished
-    ? getPredictionResultReason({
-        predictedHomeScore: prediction?.predicted_home_score,
-        predictedAwayScore: prediction?.predicted_away_score,
-        actualHomeScore: match.home_score,
-        actualAwayScore: match.away_score,
-      })
-    : 'Bad luck';
   const buttonClass = match.is_starred
     ? prediction
       ? 'bg-gold text-ink hover:bg-gold/90'
@@ -120,39 +103,7 @@ export function CompactPredictionForm({
         />
       </div>
       {finished ? (
-        <div className="grid w-56 max-w-[72vw]">
-          <button
-            className="grid h-16 w-full grid-cols-[4.5rem_minmax(0,1fr)_3.5rem] overflow-hidden rounded-md border border-ocean/25 bg-white p-0 text-ink shadow-sm disabled:cursor-not-allowed sm:h-12"
-            disabled
-            type="button"
-          >
-            <span className="flex min-w-0 flex-col items-center justify-center gap-1.5 border-r border-ink/10 text-center leading-none sm:gap-1">
-              <span className="text-[0.48rem] font-bold uppercase text-ink/45">
-                Finished
-              </span>
-              <span className="text-xl font-black tabular-nums sm:text-lg">
-                {match.home_score} - {match.away_score}
-              </span>
-            </span>
-            <span className="flex min-w-0 items-center justify-center px-2 text-center text-xs font-bold leading-tight text-ink/70 sm:px-1.5 sm:text-[0.62rem]">
-              <span>
-                {pointsReason}
-                {match.is_starred && points > 0 ? ' ⭐' : ''}
-              </span>
-            </span>
-            <span
-              className={`flex min-w-0 flex-col items-center justify-center gap-1.5 border-l border-ink/10 text-center leading-none sm:gap-1 ${pointsClass}`}
-            >
-              <span className="text-[0.48rem] font-bold uppercase text-ink/45">
-                Pts
-              </span>
-              <span className="text-lg font-black tabular-nums sm:text-base">
-                {points > 0 ? '+' : ''}
-                {points}
-              </span>
-            </span>
-          </button>
-        </div>
+        <FinishedPredictionResult match={match} prediction={prediction} />
       ) : (
         <div className="grid w-full gap-1">
           <button
