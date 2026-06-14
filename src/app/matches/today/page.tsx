@@ -157,6 +157,23 @@ export default async function TodaysMatchesPage({
         .in('match_id', Array.from(persistedPreviousMatchIds))
         .order('updated_at', { ascending: false })
     : { data: [] as SubmittedPrediction[] };
+  const submissionUserIds = Array.from(
+    new Set((submissions ?? []).map((submission) => submission.user_id)),
+  );
+  const { data: submissionProfiles } = submissionUserIds.length
+    ? await supabase
+        .from('profiles')
+        .select('id, display_name')
+        .in('id', submissionUserIds)
+    : { data: [] as Pick<Profile, 'id' | 'display_name'>[] };
+  const submissionProfilesById = new Map(
+    (submissionProfiles ?? []).map((profile) => [profile.id, profile]),
+  );
+  const namedSubmissions = (submissions ?? []).map((submission) => ({
+    ...submission,
+    profiles:
+      submissionProfilesById.get(submission.user_id) ?? submission.profiles,
+  }));
   return (
     <section className="grid gap-8">
       <div className="grid gap-2">
@@ -199,7 +216,7 @@ export default async function TodaysMatchesPage({
           <SubmissionsList
             matches={previousMatches}
             showSearch={false}
-            submissions={((submissions ?? []) as SubmittedPrediction[])}
+            submissions={namedSubmissions as SubmittedPrediction[]}
           />
         ) : (
           <p className="panel text-sm text-ink/65">

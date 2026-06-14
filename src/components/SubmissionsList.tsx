@@ -40,7 +40,7 @@ function formatPredictionScore(
     prediction.predicted_home_score === null ||
     prediction.predicted_away_score === null
   ) {
-    return 'Auto entry';
+    return '❌';
   }
 
   return `${prediction.predicted_home_score}-${prediction.predicted_away_score}`;
@@ -145,6 +145,18 @@ export function SubmissionsList({
         ...(grouped.get(submission.match_id) ?? []),
         submission,
       ]);
+    }
+
+    for (const matchSubmissions of grouped.values()) {
+      matchSubmissions.sort((first, second) => {
+        const firstName = first.profiles?.display_name ?? '';
+        const secondName = second.profiles?.display_name ?? '';
+        const nameOrder = firstName.localeCompare(secondName, undefined, {
+          sensitivity: 'base',
+        });
+
+        return nameOrder || first.user_id.localeCompare(second.user_id);
+      });
     }
 
     return grouped;
