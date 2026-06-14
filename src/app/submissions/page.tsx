@@ -60,6 +60,22 @@ export default async function SubmissionsPage() {
         .in('match_id', matchIds)
         .order('updated_at', { ascending: false })
     : { data: [] as SubmittedPrediction[] };
+  const userIds = Array.from(
+    new Set((submissions ?? []).map((submission) => submission.user_id)),
+  );
+  const { data: profiles } = userIds.length
+    ? await supabase
+        .from('profiles')
+        .select('id, display_name')
+        .in('id', userIds)
+    : { data: [] as Pick<Profile, 'id' | 'display_name'>[] };
+  const profilesById = new Map(
+    (profiles ?? []).map((profile) => [profile.id, profile]),
+  );
+  const namedSubmissions = (submissions ?? []).map((submission) => ({
+    ...submission,
+    profiles: profilesById.get(submission.user_id) ?? submission.profiles,
+  }));
 
   return (
     <section className="grid gap-6">
@@ -72,7 +88,7 @@ export default async function SubmissionsPage() {
 
       <SubmissionsList
         matches={matches}
-        submissions={((submissions ?? []) as SubmittedPrediction[])}
+        submissions={namedSubmissions as SubmittedPrediction[]}
       />
     </section>
   );
