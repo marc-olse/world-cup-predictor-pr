@@ -10,10 +10,15 @@ import {
   worldCupFixtures,
 } from '@/lib/fixtures';
 import { createClient } from '@/lib/supabase/server';
-import type { Match, Prediction, Profile } from '@/lib/types';
+import type { LeaderboardRow, Match, Prediction, Profile } from '@/lib/types';
 
 type SubmittedPrediction = Prediction & {
   profiles: Pick<Profile, 'display_name'> | null;
+};
+
+type MatchdayAward = {
+  displayName: string;
+  points: number;
 };
 
 function matchKey(match: Pick<Match, 'home_team' | 'away_team' | 'kickoff_at'>) {
@@ -91,6 +96,99 @@ function mergeWindowMatches(staticMatches: Match[], databaseMatches: Match[]) {
     );
 }
 
+function getPreviousMatchdayAwards(
+  submissions: SubmittedPrediction[],
+  leaderboardRows: LeaderboardRow[],
+) {
+  if (!leaderboardRows.length) {
+    return null;
+  }
+
+  const pointsByUserId = new Map(
+    leaderboardRows.map((row) => [
+      row.user_id,
+      {
+        displayName: row.display_name,
+        leaderboardRank: leaderboardRows.findIndex(
+          (leaderboardRow) => leaderboardRow.user_id === row.user_id,
+        ),
+        points: 0,
+      },
+    ]),
+  );
+
+  for (const submission of submissions) {
+    const entry = pointsByUserId.get(submission.user_id);
+
+    if (entry) {
+      entry.points += submission.points;
+    } else {
+      pointsByUserId.set(submission.user_id, {
+        displayName: submission.profiles?.display_name ?? 'Player',
+        leaderboardRank: leaderboardRows.length,
+        points: submission.points,
+      });
+    }
+  }
+
+  const dailyRows = Array.from(pointsByUserId.values());
+
+  if (!dailyRows.length) {
+    return null;
+  }
+
+  const rankedDailyRows = [...dailyRows].sort(
+    (first, second) =>
+      second.points - first.points || first.leaderboardRank - second.leaderboardRank,
+  );
+
+  return {
+    clown: rankedDailyRows.at(-1) as MatchdayAward,
+    gold: rankedDailyRows[0] as MatchdayAward,
+  };
+}
+
+function PreviousMatchdayAwards({
+  awards,
+}: {
+  awards: { clown: MatchdayAward; gold: MatchdayAward } | null;
+}) {
+  if (!awards) {
+    return null;
+  }
+
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      <div className="rounded-lg border border-gold/30 bg-white p-4 shadow-sm">
+        <p className="text-xs font-black uppercase tracking-wide text-ink/45">
+          Winner of the day
+        </p>
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <p className="min-w-0 truncate text-lg font-black text-ink">
+            🥇 {awards.gold.displayName}
+          </p>
+          <p className="shrink-0 text-lg font-black text-turf">
+            +{awards.gold.points}
+          </p>
+        </div>
+      </div>
+      <div className="rounded-lg border border-ink/10 bg-white p-4 shadow-sm">
+        <p className="text-xs font-black uppercase tracking-wide text-ink/45">
+          Loser of the day
+        </p>
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <p className="min-w-0 truncate text-lg font-black text-ink">
+            🤡 {awards.clown.displayName}
+          </p>
+          <p className="shrink-0 text-lg font-black text-ink/60">
+            +{awards.clown.points}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default async function TodaysMatchesPage({
   searchParams,
 }: {
@@ -157,6 +255,13 @@ export default async function TodaysMatchesPage({
         .in('match_id', Array.from(persistedPreviousMatchIds))
         .order('updated_at', { ascending: false })
     : { data: [] as SubmittedPrediction[] };
+  const { data: leaderboardRows } = await supabase
+    .from('leaderboard')
+    .select('*')
+    .order('total_points', { ascending: false })
+    .order('exact_scores_count', { ascending: false })
+    .order('correct_results_count', { ascending: false })
+    .order('display_name', { ascending: true });
   const submissionUserIds = Array.from(
     new Set((submissions ?? []).map((submission) => submission.user_id)),
   );
@@ -174,6 +279,12 @@ export default async function TodaysMatchesPage({
     profiles:
       submissionProfilesById.get(submission.user_id) ?? submission.profiles,
   }));
+  const previousMatchdayAwards = previousMatches.length
+    ? getPreviousMatchdayAwards(
+        namedSubmissions as SubmittedPrediction[],
+        leaderboardRows ?? [],
+      )
+    : null;
   return (
     <section className="grid gap-8">
       <div className="grid gap-2">
@@ -195,6 +306,7 @@ export default async function TodaysMatchesPage({
             persistedMatchIds={Array.from(persistedNextMatchIds)}
             predictions={predictions ?? []}
             returnTo="/matches/today"
+            showBulkSubmit
             showSearch={false}
           />
         ) : (
@@ -212,6 +324,7 @@ export default async function TodaysMatchesPage({
             {previousWindow ? ` for ${previousWindow.label}.` : '.'}
           </p>
         </div>
+        <PreviousMatchdayAwards awards={previousMatchdayAwards} />
         {previousMatches.length ? (
           <SubmissionsList
             matches={previousMatches}

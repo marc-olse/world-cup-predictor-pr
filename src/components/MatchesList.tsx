@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
+import { BulkMatchdaySubmitButton } from '@/components/BulkMatchdaySubmitButton';
 import { CompactPredictionForm } from '@/components/CompactPredictionForm';
 import { countryFlag } from '@/lib/countries';
 import {
@@ -50,12 +51,14 @@ export function MatchesList({
   persistedMatchIds,
   predictions,
   returnTo = '/matches',
+  showBulkSubmit = false,
   showSearch = true,
 }: {
   matches: Match[];
   persistedMatchIds: string[];
   predictions: Prediction[];
   returnTo?: string;
+  showBulkSubmit?: boolean;
   showSearch?: boolean;
 }) {
   const [query, setQuery] = useState('');
@@ -88,6 +91,8 @@ export function MatchesList({
           </p>
         </div>
       ) : null}
+
+      {showBulkSubmit ? <BulkMatchdaySubmitButton /> : null}
 
       {filteredMatches.length ? (
         <div className="grid gap-7">

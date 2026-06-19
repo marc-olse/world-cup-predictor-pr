@@ -6,12 +6,29 @@ import { redirect } from 'next/navigation';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
+type BulkPredictionResult = {
+  closed: number;
+  invalid: number;
+  saved: number;
+  skipped: number;
+};
+
 function parseScore(formData: FormData, key: string) {
   const value = formData.get(key);
   const parsed = typeof value === 'string' ? Number(value) : Number.NaN;
 
   if (!Number.isInteger(parsed) || parsed < 0) {
     throw new Error('Scores must be whole numbers of 0 or more.');
+  }
+
+  return parsed;
+}
+
+function parseBulkScore(value: FormDataEntryValue | null) {
+  const parsed = typeof value === 'string' ? Number(value) : Number.NaN;
+
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    return null;
   }
 
   return parsed;
@@ -73,4 +90,96 @@ export async function submitPrediction(formData: FormData) {
   revalidatePath('/submissions');
   const separator = returnTo.includes('?') ? '&' : '?';
   redirect(`${returnTo}${separator}saved=1`);
+}
+
+export async function submitMatchdayPredictions(
+  formData: FormData,
+): Promise<BulkPredictionResult> {
+  const user = await requireUser();
+  const matchIds = Array.from(new Set(formData.getAll('matchId')))
+    .filter((matchId): matchId is string => typeof matchId === 'string' && !!matchId);
+
+  if (!matchIds.length) {
+    return { closed: 0, invalid: 0, saved: 0, skipped: 0 };
+  }
+
+  const supabase = await createClient();
+  const { data: matches, error: matchesError } = await supabase
+    .from('matches')
+    .select('id, kickoff_at')
+    .in('id', matchIds);
+
+  if (matchesError) {
+    throw new Error(matchesError.message);
+  }
+
+  const matchesById = new Map((matches ?? []).map((match) => [match.id, match]));
+  const rows = [];
+  const result: BulkPredictionResult = {
+    closed: 0,
+    invalid: 0,
+    saved: 0,
+    skipped: 0,
+  };
+
+  for (const matchId of matchIds) {
+    const match = matchesById.get(matchId);
+    const predictedHomeScore = parseBulkScore(
+      formData.get(`predictedHomeScore:${matchId}`),
+    );
+    const predictedAwayScore = parseBulkScore(
+      formData.get(`predictedAwayScore:${matchId}`),
+    );
+
+    if (!match) {
+      result.skipped += 1;
+      continue;
+    }
+
+    if (predictedHomeScore === null || predictedAwayScore === null) {
+      result.invalid += 1;
+      continue;
+    }
+
+    if (Date.now() >= new Date(match.kickoff_at).getTime()) {
+      result.closed += 1;
+      continue;
+    }
+
+    rows.push({
+      user_id: user.id,
+      match_id: matchId,
+      predicted_home_score: predictedHomeScore,
+      predicted_away_score: predictedAwayScore,
+    });
+  }
+
+  if (!rows.length) {
+    if (result.closed > 0) {
+      await supabase.rpc('close_started_matches_with_null_predictions');
+    }
+
+    return result;
+  }
+
+  const { error } = await supabase.from('predictions').upsert(rows, {
+    onConflict: 'user_id,match_id',
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  result.saved = rows.length;
+
+  if (result.closed > 0) {
+    await supabase.rpc('close_started_matches_with_null_predictions');
+  }
+
+  revalidatePath('/matches');
+  revalidatePath('/matches/today');
+  revalidatePath('/my-predictions');
+  revalidatePath('/submissions');
+
+  return result;
 }

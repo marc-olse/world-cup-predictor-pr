@@ -1,4 +1,7 @@
-import { LeaderboardTable } from '@/components/LeaderboardTable';
+import {
+  LeaderboardTable,
+  type LeaderboardStarStats,
+} from '@/components/LeaderboardTable';
 import { requireUser } from '@/lib/auth';
 import { createClient } from '@/lib/supabase/server';
 
@@ -7,6 +10,27 @@ export default async function LeaderboardPage() {
 
   const supabase = await createClient();
   const { data: rows } = await supabase.from('leaderboard').select('*');
+  const { data: starredPredictions } = await supabase
+    .from('predictions')
+    .select('user_id, points')
+    .in('points', [2, 6]);
+  const starStats = (starredPredictions ?? []).reduce<LeaderboardStarStats>(
+    (stats, prediction) => {
+      const current = stats[prediction.user_id] ?? { exact: 0, result: 0 };
+
+      if (prediction.points === 6) {
+        current.exact += 1;
+      }
+
+      if (prediction.points === 2) {
+        current.result += 1;
+      }
+
+      stats[prediction.user_id] = current;
+      return stats;
+    },
+    {},
+  );
 
   return (
     <section className="grid gap-5">
@@ -14,7 +38,7 @@ export default async function LeaderboardPage() {
         <h1 className="text-3xl font-bold">Leaderboard</h1>
         <p className="mt-2 text-sm text-ink/60">Ranked by total points, then exact scores.</p>
       </div>
-      <LeaderboardTable rows={rows ?? []} />
+      <LeaderboardTable rows={rows ?? []} starStats={starStats} />
       <section className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>

@@ -25,7 +25,7 @@ describe('getPredictionResultReason', () => {
     ).toBe('Correct outcome');
   });
 
-  it('labels a wrong outcome as bad luck', () => {
+  it('labels a wrong outcome as unlucky', () => {
     expect(
       getPredictionResultReason({
         predictedHomeScore: 0,
@@ -33,10 +33,10 @@ describe('getPredictionResultReason', () => {
         actualHomeScore: 2,
         actualAwayScore: 0,
       }),
-    ).toBe('Bad luck');
+    ).toBe('Unlucky');
   });
 
-  it('labels a missing prediction as bad luck', () => {
+  it('labels a missing prediction as unlucky', () => {
     expect(
       getPredictionResultReason({
         predictedHomeScore: null,
@@ -44,6 +44,6 @@ describe('getPredictionResultReason', () => {
         actualHomeScore: 2,
         actualAwayScore: 0,
       }),
-    ).toBe('Bad luck');
+    ).toBe('Unlucky');
   });
 });

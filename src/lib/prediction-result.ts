@@ -1,7 +1,7 @@
 export type PredictionResultReason =
   | 'Exact score'
   | 'Correct outcome'
-  | 'Bad luck';
+  | 'Unlucky';
 
 export function getPredictionResultReason(params: {
   predictedHomeScore: number | null | undefined;
@@ -17,11 +17,11 @@ export function getPredictionResultReason(params: {
   } = params;
 
   if (actualHomeScore === null || actualHomeScore === undefined) {
-    return 'Bad luck';
+    return 'Unlucky';
   }
 
   if (actualAwayScore === null || actualAwayScore === undefined) {
-    return 'Bad luck';
+    return 'Unlucky';
   }
 
   if (
@@ -32,11 +32,11 @@ export function getPredictionResultReason(params: {
   }
 
   if (predictedHomeScore === null || predictedHomeScore === undefined) {
-    return 'Bad luck';
+    return 'Unlucky';
   }
 
   if (predictedAwayScore === null || predictedAwayScore === undefined) {
-    return 'Bad luck';
+    return 'Unlucky';
   }
 
   const predictedOutcome = Math.sign(
@@ -44,5 +44,5 @@ export function getPredictionResultReason(params: {
   );
   const actualOutcome = Math.sign(actualHomeScore - actualAwayScore);
 
-  return predictedOutcome === actualOutcome ? 'Correct outcome' : 'Bad luck';
+  return predictedOutcome === actualOutcome ? 'Correct outcome' : 'Unlucky';
 }
