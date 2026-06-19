@@ -10,14 +10,14 @@ import {
   worldCupFixtures,
 } from '@/lib/fixtures';
 import { createClient } from '@/lib/supabase/server';
-import type { LeaderboardRow, Match, Prediction, Profile } from '@/lib/types';
+import type { Match, Prediction, Profile } from '@/lib/types';
 
 type SubmittedPrediction = Prediction & {
   profiles: Pick<Profile, 'display_name'> | null;
 };
 
 type MatchdayAward = {
-  displayName: string;
+  displayNames: string[];
   points: number;
 };
 
@@ -98,24 +98,11 @@ function mergeWindowMatches(staticMatches: Match[], databaseMatches: Match[]) {
 
 function getPreviousMatchdayAwards(
   submissions: SubmittedPrediction[],
-  leaderboardRows: LeaderboardRow[],
 ) {
-  if (!leaderboardRows.length) {
-    return null;
-  }
-
-  const pointsByUserId = new Map(
-    leaderboardRows.map((row) => [
-      row.user_id,
-      {
-        displayName: row.display_name,
-        leaderboardRank: leaderboardRows.findIndex(
-          (leaderboardRow) => leaderboardRow.user_id === row.user_id,
-        ),
-        points: 0,
-      },
-    ]),
-  );
+  const pointsByUserId = new Map<
+    string,
+    { displayName: string; points: number }
+  >();
 
   for (const submission of submissions) {
     const entry = pointsByUserId.get(submission.user_id);
@@ -125,7 +112,6 @@ function getPreviousMatchdayAwards(
     } else {
       pointsByUserId.set(submission.user_id, {
         displayName: submission.profiles?.display_name ?? 'Player',
-        leaderboardRank: leaderboardRows.length,
         points: submission.points,
       });
     }
@@ -137,14 +123,23 @@ function getPreviousMatchdayAwards(
     return null;
   }
 
-  const rankedDailyRows = [...dailyRows].sort(
-    (first, second) =>
-      second.points - first.points || first.leaderboardRank - second.leaderboardRank,
-  );
+  const topPoints = Math.max(...dailyRows.map((row) => row.points));
+  const bottomPoints = Math.min(...dailyRows.map((row) => row.points));
+  const getNamesForPoints = (points: number) =>
+    dailyRows
+      .filter((row) => row.points === points)
+      .map((row) => row.displayName)
+      .sort((first, second) => first.localeCompare(second));
 
   return {
-    clown: rankedDailyRows.at(-1) as MatchdayAward,
-    gold: rankedDailyRows[0] as MatchdayAward,
+    clown: {
+      displayNames: getNamesForPoints(bottomPoints),
+      points: bottomPoints,
+    },
+    gold: {
+      displayNames: getNamesForPoints(topPoints),
+      points: topPoints,
+    },
   };
 }
 
@@ -165,7 +160,7 @@ function PreviousMatchdayAwards({
         </p>
         <div className="mt-2 flex items-center justify-between gap-3">
           <p className="min-w-0 truncate text-lg font-black text-ink">
-            🥇 {awards.gold.displayName}
+            🥇 {awards.gold.displayNames.join(', ')}
           </p>
           <p className="shrink-0 text-lg font-black text-turf">
             +{awards.gold.points}
@@ -178,7 +173,7 @@ function PreviousMatchdayAwards({
         </p>
         <div className="mt-2 flex items-center justify-between gap-3">
           <p className="min-w-0 truncate text-lg font-black text-ink">
-            🤡 {awards.clown.displayName}
+            🤡 {awards.clown.displayNames.join(', ')}
           </p>
           <p className="shrink-0 text-lg font-black text-ink/60">
             +{awards.clown.points}
@@ -255,13 +250,6 @@ export default async function TodaysMatchesPage({
         .in('match_id', Array.from(persistedPreviousMatchIds))
         .order('updated_at', { ascending: false })
     : { data: [] as SubmittedPrediction[] };
-  const { data: leaderboardRows } = await supabase
-    .from('leaderboard')
-    .select('*')
-    .order('total_points', { ascending: false })
-    .order('exact_scores_count', { ascending: false })
-    .order('correct_results_count', { ascending: false })
-    .order('display_name', { ascending: true });
   const submissionUserIds = Array.from(
     new Set((submissions ?? []).map((submission) => submission.user_id)),
   );
@@ -280,10 +268,7 @@ export default async function TodaysMatchesPage({
       submissionProfilesById.get(submission.user_id) ?? submission.profiles,
   }));
   const previousMatchdayAwards = previousMatches.length
-    ? getPreviousMatchdayAwards(
-        namedSubmissions as SubmittedPrediction[],
-        leaderboardRows ?? [],
-      )
+    ? getPreviousMatchdayAwards(namedSubmissions as SubmittedPrediction[])
     : null;
   return (
     <section className="grid gap-8">
