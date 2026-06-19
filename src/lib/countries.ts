@@ -56,8 +56,8 @@ const countryCodes: Record<string, string> = {
 const specialFlags: Record<string, string> = {
   'Bosnia & Herzegovina': '🇧🇦',
   'Bosnia and Herzegovina': '🇧🇦',
-  England: '🇬🇧',
-  Scotland: '🇬🇧',
+  England: '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}',
+  Scotland: '\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}',
   Wales: '🏴',
   'South Africa': '🇿🇦',
   'United States': '🇺🇸',
