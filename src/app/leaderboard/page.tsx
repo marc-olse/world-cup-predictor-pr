@@ -10,13 +10,19 @@ export default async function LeaderboardPage() {
 
   const supabase = await createClient();
   const { data: rows } = await supabase.from('leaderboard').select('*');
-  const { data: starredPredictions } = await supabase
+  const { data: finishedPredictions } = await supabase
     .from('predictions')
-    .select('user_id, points')
-    .in('points', [2, 6]);
-  const starStats = (starredPredictions ?? []).reduce<LeaderboardStarStats>(
+    .select('user_id, points, matches!inner(status)')
+    .eq('matches.status', 'finished');
+  const starStats = (finishedPredictions ?? []).reduce<LeaderboardStarStats>(
     (stats, prediction) => {
-      const current = stats[prediction.user_id] ?? { exact: 0, result: 0 };
+      const current = stats[prediction.user_id] ?? {
+        exact: 0,
+        finishedPredictions: 0,
+        result: 0,
+      };
+
+      current.finishedPredictions += 1;
 
       if (prediction.points === 6) {
         current.exact += 1;

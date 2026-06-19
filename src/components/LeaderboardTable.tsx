@@ -4,6 +4,7 @@ export type LeaderboardStarStats = Record<
   string,
   {
     exact: number;
+    finishedPredictions: number;
     result: number;
   }
 >;
@@ -68,14 +69,17 @@ export function LeaderboardTable({
             <th className="px-4 py-3">Points</th>
             <th className="px-4 py-3">Exact (⭐)</th>
             <th className="px-4 py-3">Result (⭐)</th>
-            <th className="px-4 py-3">Exact %</th>
-            <th className="px-4 py-3">Result %</th>
+            <th className="px-4 py-3">Hit rate (Exact)</th>
             <th className="px-4 py-3">#Predictions sent</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-ink/10">
           {rows.map((row, index) => {
-            const starred = starStats[row.user_id] ?? { exact: 0, result: 0 };
+            const starred = starStats[row.user_id] ?? {
+              exact: 0,
+              finishedPredictions: 0,
+              result: 0,
+            };
 
             return (
               <tr key={row.user_id}>
@@ -97,10 +101,18 @@ export function LeaderboardTable({
                   />
                 </td>
                 <td className="px-4 py-3 font-semibold text-ink/70">
-                  {formatPercentage(row.exact_scores_count, row.predictions_count)}
-                </td>
-                <td className="px-4 py-3 font-semibold text-ink/70">
-                  {formatPercentage(row.correct_results_count, row.predictions_count)}
+                  {formatPercentage(
+                    row.exact_scores_count + row.correct_results_count,
+                    starred.finishedPredictions,
+                  )}{' '}
+                  <span className="whitespace-nowrap text-ink/55">
+                    (
+                    {formatPercentage(
+                      row.exact_scores_count,
+                      starred.finishedPredictions,
+                    )}
+                    )
+                  </span>
                 </td>
                 <td className="px-4 py-3">{row.predictions_count}</td>
               </tr>
