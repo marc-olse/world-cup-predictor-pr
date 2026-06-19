@@ -8,12 +8,16 @@ import type { Match, Prediction } from '@/lib/types';
 import { useKickoffLock } from '@/lib/use-kickoff-lock';
 
 function ScoreInput({
+  bulkMatchId,
+  bulkScoreSide,
   disabled,
   label,
   name,
   onChange,
   value,
 }: {
+  bulkMatchId?: string;
+  bulkScoreSide?: 'away' | 'home';
   disabled: boolean;
   label: string;
   name: string;
@@ -25,6 +29,8 @@ function ScoreInput({
       <span className="sr-only">{label}</span>
       <input
         className="h-14 w-14 rounded-lg border-2 border-ink/55 bg-white/40 px-2 text-center text-2xl font-black text-ink outline-none transition [appearance:textfield] focus:border-turf focus:ring-2 focus:ring-turf/20 disabled:border-ink/20 disabled:text-ink/35 sm:h-16 sm:w-16 sm:text-3xl [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        data-bulk-match-id={bulkMatchId}
+        data-bulk-score-side={bulkScoreSide}
         disabled={disabled}
         inputMode="numeric"
         min="0"
@@ -87,6 +93,8 @@ export function CompactPredictionForm({
       <input name="returnTo" type="hidden" value={returnTo} />
       <div className="flex items-center gap-2">
         <ScoreInput
+          bulkMatchId={match.id}
+          bulkScoreSide="home"
           disabled={formDisabled}
           label="Local"
           name="predictedHomeScore"
@@ -95,6 +103,8 @@ export function CompactPredictionForm({
         />
         <span className="text-3xl font-black text-ink">:</span>
         <ScoreInput
+          bulkMatchId={match.id}
+          bulkScoreSide="away"
           disabled={formDisabled}
           label="Away"
           name="predictedAwayScore"
