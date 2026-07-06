@@ -11,6 +11,8 @@ type SubmittedPrediction = Prediction & {
   profiles: Pick<Profile, 'display_name'> | null;
 };
 
+const submissionsPageSize = 500;
+
 function matchKey(match: Pick<Match, 'home_team' | 'away_team' | 'kickoff_at'>) {
   return `${match.home_team}|${match.away_team}|${new Date(match.kickoff_at).getTime()}`;
 }
@@ -53,15 +55,32 @@ export default async function SubmissionsPage() {
   );
   const matchIds = matches.map((match) => match.id);
 
-  const { data: submissions } = matchIds.length
-    ? await supabase
+  const submissions: SubmittedPrediction[] = [];
+
+  if (matchIds.length) {
+    for (let from = 0; ; from += submissionsPageSize) {
+      const { data, error } = await supabase
         .from('predictions')
         .select('*, profiles(display_name)')
         .in('match_id', matchIds)
         .order('updated_at', { ascending: false })
-    : { data: [] as SubmittedPrediction[] };
+        .order('id', { ascending: false })
+        .range(from, from + submissionsPageSize - 1);
+
+      if (error) {
+        throw error;
+      }
+
+      const page = (data ?? []) as SubmittedPrediction[];
+      submissions.push(...page);
+
+      if (page.length < submissionsPageSize) {
+        break;
+      }
+    }
+  }
   const userIds = Array.from(
-    new Set((submissions ?? []).map((submission) => submission.user_id)),
+    new Set(submissions.map((submission) => submission.user_id)),
   );
   const { data: profiles } = userIds.length
     ? await supabase
@@ -72,7 +91,7 @@ export default async function SubmissionsPage() {
   const profilesById = new Map(
     (profiles ?? []).map((profile) => [profile.id, profile]),
   );
-  const namedSubmissions = (submissions ?? []).map((submission) => ({
+  const namedSubmissions = submissions.map((submission) => ({
     ...submission,
     profiles: profilesById.get(submission.user_id) ?? submission.profiles,
   }));

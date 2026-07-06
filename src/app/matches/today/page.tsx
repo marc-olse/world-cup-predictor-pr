@@ -158,8 +158,8 @@ function PreviousMatchdayAwards({
         <p className="text-xs font-black uppercase tracking-wide text-ink/45">
           Winner of the day
         </p>
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <p className="min-w-0 truncate text-lg font-black text-ink">
+        <div className="mt-2 flex min-w-0 items-start justify-between gap-3">
+          <p className="min-w-0 break-words text-lg font-black leading-snug text-ink">
             🥇 {awards.gold.displayNames.join(', ')}
           </p>
           <p className="shrink-0 text-lg font-black text-turf">
@@ -171,8 +171,8 @@ function PreviousMatchdayAwards({
         <p className="text-xs font-black uppercase tracking-wide text-ink/45">
           Loser of the day
         </p>
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <p className="min-w-0 truncate text-lg font-black text-ink">
+        <div className="mt-2 flex min-w-0 items-start justify-between gap-3">
+          <p className="min-w-0 break-words text-lg font-black leading-snug text-ink">
             🤡 {awards.clown.displayNames.join(', ')}
           </p>
           <p className="shrink-0 text-lg font-black text-ink/60">
