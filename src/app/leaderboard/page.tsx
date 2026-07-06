@@ -3,39 +3,217 @@ import {
   type LeaderboardStarStats,
 } from '@/components/LeaderboardTable';
 import { requireUser } from '@/lib/auth';
+import { calculateMatchPredictionPoints } from '@/lib/match-points';
 import { createClient } from '@/lib/supabase/server';
+import type { LeaderboardRow, MatchStatus } from '@/lib/types';
+
+const predictionsPageSize = 500;
+
+type LeaderboardPrediction = {
+  user_id: string;
+  predicted_home_score: number | null;
+  predicted_away_score: number | null;
+  matches: {
+    away_score: number | null;
+    home_score: number | null;
+    is_starred: boolean;
+    status: MatchStatus;
+  };
+};
+
+type TournamentPredictionRow = {
+  semi_finalists: string[];
+  user_id: string;
+  winner: string | null;
+};
+
+type TournamentResultRow = {
+  semi_finalists: string[];
+  winner: string | null;
+};
+
+function predictionOutcome(homeScore: number, awayScore: number) {
+  if (homeScore > awayScore) {
+    return 'home';
+  }
+
+  if (homeScore < awayScore) {
+    return 'away';
+  }
+
+  return 'draw';
+}
+
+function calculateTournamentPoints(
+  prediction: TournamentPredictionRow | undefined,
+  result: TournamentResultRow | null,
+) {
+  if (!prediction || !result) {
+    return 0;
+  }
+
+  const winnerPoints =
+    result.winner !== null && prediction.winner === result.winner ? 10 : 0;
+  const semiFinalistPoints = prediction.semi_finalists.filter((team) =>
+    result.semi_finalists.includes(team),
+  ).length * 5;
+
+  return winnerPoints + semiFinalistPoints;
+}
 
 export default async function LeaderboardPage() {
   await requireUser();
 
   const supabase = await createClient();
-  const { data: rows } = await supabase.from('leaderboard').select('*');
-  const { data: finishedPredictions } = await supabase
-    .from('predictions')
-    .select('user_id, points, matches!inner(status)')
-    .eq('matches.status', 'finished');
-  const starStats = (finishedPredictions ?? []).reduce<LeaderboardStarStats>(
-    (stats, prediction) => {
-      const current = stats[prediction.user_id] ?? {
-        exact: 0,
-        finishedPredictions: 0,
-        result: 0,
-      };
+  const { data: profiles, error: profilesError } = await supabase
+    .from('profiles')
+    .select('id, display_name');
 
-      current.finishedPredictions += 1;
+  if (profilesError) {
+    throw new Error(profilesError.message);
+  }
 
-      if (prediction.points === 6) {
-        current.exact += 1;
+  const predictions: LeaderboardPrediction[] = [];
+
+  for (let from = 0; ; from += predictionsPageSize) {
+    const { data, error } = await supabase
+      .from('predictions')
+      .select(
+        'user_id, predicted_home_score, predicted_away_score, matches!inner(status, home_score, away_score, is_starred)',
+      )
+      .range(from, from + predictionsPageSize - 1);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    const page = (data ?? []) as unknown as LeaderboardPrediction[];
+    predictions.push(...page);
+
+    if (page.length < predictionsPageSize) {
+      break;
+    }
+  }
+
+  const { data: tournamentPredictions, error: tournamentPredictionsError } =
+    await supabase
+      .from('tournament_predictions')
+      .select('user_id, winner, semi_finalists');
+
+  if (tournamentPredictionsError) {
+    throw new Error(tournamentPredictionsError.message);
+  }
+
+  const { data: tournamentResult, error: tournamentResultError } = await supabase
+    .from('tournament_results')
+    .select('winner, semi_finalists')
+    .eq('id', true)
+    .maybeSingle();
+
+  if (tournamentResultError) {
+    throw new Error(tournamentResultError.message);
+  }
+
+  const tournamentPredictionByUserId = new Map(
+    ((tournamentPredictions ?? []) as TournamentPredictionRow[]).map((prediction) => [
+      prediction.user_id,
+      prediction,
+    ]),
+  );
+
+  const rowsByUserId = new Map<string, LeaderboardRow>();
+  const starStats: LeaderboardStarStats = {};
+
+  for (const profile of profiles ?? []) {
+    rowsByUserId.set(profile.id, {
+      user_id: profile.id,
+      display_name: profile.display_name,
+      total_points: calculateTournamentPoints(
+        tournamentPredictionByUserId.get(profile.id),
+        tournamentResult as TournamentResultRow | null,
+      ),
+      predictions_count: 0,
+      exact_scores_count: 0,
+      correct_results_count: 0,
+    });
+
+    starStats[profile.id] = {
+      exact: 0,
+      finishedPredictions: 0,
+      result: 0,
+    };
+  }
+
+  for (const prediction of predictions) {
+    const row = rowsByUserId.get(prediction.user_id);
+
+    if (!row) {
+      continue;
+    }
+
+    row.predictions_count += 1;
+
+    if (prediction.matches.status !== 'finished') {
+      continue;
+    }
+
+    const stats = starStats[prediction.user_id];
+    stats.finishedPredictions += 1;
+
+    const points = calculateMatchPredictionPoints({
+      status: prediction.matches.status,
+      isStarred: prediction.matches.is_starred,
+      predictedHomeScore: prediction.predicted_home_score,
+      predictedAwayScore: prediction.predicted_away_score,
+      actualHomeScore: prediction.matches.home_score,
+      actualAwayScore: prediction.matches.away_score,
+    });
+
+    row.total_points += points;
+
+    if (points === 0) {
+      continue;
+    }
+
+    const exactScore =
+      prediction.predicted_home_score === prediction.matches.home_score &&
+      prediction.predicted_away_score === prediction.matches.away_score;
+
+    if (exactScore) {
+      row.exact_scores_count += 1;
+
+      if (prediction.matches.is_starred) {
+        stats.exact += 1;
       }
 
-      if (prediction.points === 2) {
-        current.result += 1;
-      }
+      continue;
+    }
 
-      stats[prediction.user_id] = current;
-      return stats;
-    },
-    {},
+    if (
+      prediction.predicted_home_score !== null &&
+      prediction.predicted_away_score !== null &&
+      prediction.matches.home_score !== null &&
+      prediction.matches.away_score !== null &&
+      predictionOutcome(
+        prediction.predicted_home_score,
+        prediction.predicted_away_score,
+      ) ===
+        predictionOutcome(prediction.matches.home_score, prediction.matches.away_score)
+    ) {
+      row.correct_results_count += 1;
+
+      if (prediction.matches.is_starred) {
+        stats.result += 1;
+      }
+    }
+  }
+
+  const rows = Array.from(rowsByUserId.values()).sort(
+    (first, second) =>
+      second.total_points - first.total_points ||
+      second.exact_scores_count - first.exact_scores_count ||
+      second.correct_results_count - first.correct_results_count ||
+      first.display_name.localeCompare(second.display_name),
   );
 
   return (
@@ -44,7 +222,7 @@ export default async function LeaderboardPage() {
         <h1 className="text-3xl font-bold">Leaderboard</h1>
         <p className="mt-2 text-sm text-ink/60">Ranked by total points, then exact scores.</p>
       </div>
-      <LeaderboardTable rows={rows ?? []} starStats={starStats} />
+      <LeaderboardTable rows={rows} starStats={starStats} />
       <section className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
