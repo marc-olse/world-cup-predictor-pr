@@ -32,6 +32,13 @@ type TournamentResultRow = {
   winner: string | null;
 };
 
+type TournamentStats = {
+  semiFinalistMatches: number;
+  semiFinalistPoints: number;
+  winnerMatches: number;
+  winnerPoints: number;
+};
+
 function predictionOutcome(homeScore: number, awayScore: number) {
   if (homeScore > awayScore) {
     return 'home';
@@ -44,21 +51,31 @@ function predictionOutcome(homeScore: number, awayScore: number) {
   return 'draw';
 }
 
-function calculateTournamentPoints(
+function calculateTournamentStats(
   prediction: TournamentPredictionRow | undefined,
   result: TournamentResultRow | null,
-) {
+): TournamentStats {
   if (!prediction || !result) {
-    return 0;
+    return {
+      semiFinalistMatches: 0,
+      semiFinalistPoints: 0,
+      winnerMatches: 0,
+      winnerPoints: 0,
+    };
   }
 
-  const winnerPoints =
-    result.winner !== null && prediction.winner === result.winner ? 10 : 0;
-  const semiFinalistPoints = prediction.semi_finalists.filter((team) =>
+  const semiFinalistMatches = prediction.semi_finalists.filter((team) =>
     result.semi_finalists.includes(team),
-  ).length * 5;
+  ).length;
+  const winnerMatches =
+    result.winner !== null && prediction.winner === result.winner ? 1 : 0;
 
-  return winnerPoints + semiFinalistPoints;
+  return {
+    semiFinalistMatches,
+    semiFinalistPoints: semiFinalistMatches * 5,
+    winnerMatches,
+    winnerPoints: winnerMatches * 10,
+  };
 }
 
 export default async function LeaderboardPage() {
@@ -123,19 +140,23 @@ export default async function LeaderboardPage() {
 
   const rowsByUserId = new Map<string, LeaderboardRow>();
   const starStats: LeaderboardStarStats = {};
+  const tournamentStatsByUserId: Record<string, TournamentStats> = {};
 
   for (const profile of profiles ?? []) {
+    const tournamentStats = calculateTournamentStats(
+      tournamentPredictionByUserId.get(profile.id),
+      tournamentResult as TournamentResultRow | null,
+    );
+
     rowsByUserId.set(profile.id, {
       user_id: profile.id,
       display_name: profile.display_name,
-      total_points: calculateTournamentPoints(
-        tournamentPredictionByUserId.get(profile.id),
-        tournamentResult as TournamentResultRow | null,
-      ),
+      total_points: tournamentStats.semiFinalistPoints + tournamentStats.winnerPoints,
       predictions_count: 0,
       exact_scores_count: 0,
       correct_results_count: 0,
     });
+    tournamentStatsByUserId[profile.id] = tournamentStats;
 
     starStats[profile.id] = {
       exact: 0,
@@ -222,7 +243,11 @@ export default async function LeaderboardPage() {
         <h1 className="text-3xl font-bold">Leaderboard</h1>
         <p className="mt-2 text-sm text-ink/60">Ranked by total points, then exact scores.</p>
       </div>
-      <LeaderboardTable rows={rows} starStats={starStats} />
+      <LeaderboardTable
+        rows={rows}
+        starStats={starStats}
+        tournamentStats={tournamentStatsByUserId}
+      />
       <section className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
