@@ -9,6 +9,16 @@ export type LeaderboardStarStats = Record<
   }
 >;
 
+export type LeaderboardTournamentStats = Record<
+  string,
+  {
+    semiFinalistMatches: number;
+    semiFinalistPoints: number;
+    winnerMatches: number;
+    winnerPoints: number;
+  }
+>;
+
 function formatPercentage(value: number, total: number) {
   if (total === 0) {
     return '0%';
@@ -22,6 +32,25 @@ function StatWithStarred({ starred, total }: { starred: number; total: number })
     <span>
       {total}{' '}
       <span className="whitespace-nowrap text-ink/55">({starred})</span>
+    </span>
+  );
+}
+
+function TournamentStat({
+  matches,
+  maxMatches,
+  points,
+}: {
+  matches: number;
+  maxMatches: number;
+  points: number;
+}) {
+  return (
+    <span className="whitespace-nowrap">
+      {matches}/{maxMatches}{' '}
+      <span className={points > 0 ? 'font-bold text-turf' : 'text-ink/45'}>
+        (+{points})
+      </span>
     </span>
   );
 }
@@ -51,9 +80,11 @@ function RankMarker({ index, totalRows }: { index: number; totalRows: number }) 
 export function LeaderboardTable({
   rows,
   starStats = {},
+  tournamentStats = {},
 }: {
   rows: LeaderboardRow[];
   starStats?: LeaderboardStarStats;
+  tournamentStats?: LeaderboardTournamentStats;
 }) {
   if (rows.length === 0) {
     return <p className="panel text-sm text-ink/65">No leaderboard rows yet.</p>;
@@ -70,6 +101,8 @@ export function LeaderboardTable({
             <th className="px-4 py-3">Exact (⭐)</th>
             <th className="px-4 py-3">Result (⭐)</th>
             <th className="px-4 py-3">Hit rate (Exact)</th>
+            <th className="px-4 py-3">Semi-finalists</th>
+            <th className="px-4 py-3">Winner</th>
             <th className="px-4 py-3">#Predictions sent</th>
           </tr>
         </thead>
@@ -79,6 +112,12 @@ export function LeaderboardTable({
               exact: 0,
               finishedPredictions: 0,
               result: 0,
+            };
+            const tournament = tournamentStats[row.user_id] ?? {
+              semiFinalistMatches: 0,
+              semiFinalistPoints: 0,
+              winnerMatches: 0,
+              winnerPoints: 0,
             };
 
             return (
@@ -113,6 +152,20 @@ export function LeaderboardTable({
                     )}
                     )
                   </span>
+                </td>
+                <td className="px-4 py-3 font-semibold text-ink/70">
+                  <TournamentStat
+                    matches={tournament.semiFinalistMatches}
+                    maxMatches={4}
+                    points={tournament.semiFinalistPoints}
+                  />
+                </td>
+                <td className="px-4 py-3 font-semibold text-ink/70">
+                  <TournamentStat
+                    matches={tournament.winnerMatches}
+                    maxMatches={1}
+                    points={tournament.winnerPoints}
+                  />
                 </td>
                 <td className="px-4 py-3">{row.predictions_count}</td>
               </tr>
