@@ -12,8 +12,8 @@ function TeamPill({ matched, team }: { matched: boolean; team: string }) {
     <span
       className={
         matched
-          ? 'rounded-full border border-turf/25 bg-turf/10 px-3 py-1 text-sm font-bold text-turf'
-          : 'rounded-full border border-ink/10 bg-ink/5 px-3 py-1 text-sm font-semibold text-ink/45'
+          ? 'w-fit rounded-full border border-turf/25 bg-turf/10 px-3 py-1 text-sm font-bold text-turf'
+          : 'w-fit rounded-full border border-ink/10 bg-ink/5 px-3 py-1 text-sm font-semibold text-ink/45'
       }
     >
       {teamOptionLabel(team)}
@@ -53,9 +53,9 @@ export function TournamentPredictionsList({
                 <p className="text-xs font-black uppercase tracking-wide text-ink/45">
                   Winner
                 </p>
-                {trueWinner && prediction.winner ? (
+                {prediction.winner ? (
                   <TeamPill
-                    matched={prediction.winner === trueWinner}
+                    matched={trueWinner !== null && prediction.winner === trueWinner}
                     team={prediction.winner}
                   />
                 ) : (
